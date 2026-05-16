@@ -34,7 +34,7 @@ class OrderFactory {
     std::uniform_int_distribution<unsigned int> qtyDist;
     std::normal_distribution<double> priceDist;
     std::normal_distribution<double> stopOffsetDist;
-    double spreadFactor = 10.0;
+    double spreadFactor = 100.0;
     std::string asset;
 
 public:
@@ -89,7 +89,7 @@ void benchmarkMatcher(){
     Matcher2 matcher;
     OrderFactory factory{"TEST"};
 
-    const int numOrders = 3'000'000;
+    const int numOrders = 5'000'000;
     std::vector<Order2> orders;
     orders.reserve(numOrders);
 
