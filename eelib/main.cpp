@@ -53,7 +53,7 @@ public:
         OrdType type = weighted_random_enum<OrdType>({
             0.1,  // MARKET
             1.0, // LIMIT
-            0.0,  // STOP
+            0.1,  // STOP
             0.1,  // STOPLIMIT
         });
 

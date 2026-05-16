@@ -112,18 +112,17 @@ inline LimitsBin& Matcher2::getLimitsBin(int price, std::map<int, LimitsBin>& bi
 }
 
 void Matcher2::takeSells(BookEntry& buyOrder, int maxPrice){
-    // Iterating flat maps is a bit different than regular maps:
-    // https://stackoverflow.com/questions/79847808/how-can-i-iterate-a-flat-map-in-a-range-based-for-loop-updating-values
-    // https://stackoverflow.com/questions/13230480/what-is-the-meaning-of-a-variable-with-type-auto
-    for(auto&& [price, bin] : sellLimitBins){
-        if(bin.hasDormantStops()){
-            bin.moveAllStopsToActive(activeBuyStops);
+    for(auto bin = sellLimitBins.lower_bound(spread.lowestAsk); bin != sellLimitBins.end(); bin++){
+        auto&& [price, limitsBin] = *bin;
+
+        if(limitsBin.hasDormantStops()){
+            limitsBin.moveAllStopsToActive(activeBuyStops);
         }
 
         if(buyOrder.qty > 0 && price <= maxPrice){
-            bin.take(buyOrder); // first fill the order
+            limitsBin.take(buyOrder); // first fill the order
         }
-        if(bin.totalQty() == 0){
+        if(limitsBin.totalQty() == 0){
             continue; // then find a non-empty bin with the best asks
         }
         spread.asksMissing = false;
@@ -136,7 +135,7 @@ void Matcher2::takeSells(BookEntry& buyOrder, int maxPrice){
 }
 
 void Matcher2::takeBuys(BookEntry& sellOrder, int minPrice){
-    for(auto bin = buyLimitBins.rbegin(); bin != buyLimitBins.rend(); bin++){
+    for(auto bin = std::reverse_iterator(buyLimitBins.upper_bound(spread.highestBid)); bin != buyLimitBins.rend(); bin++){
         auto&& [price, limitsBin] = *bin;
 
         if(limitsBin.hasDormantStops()){
