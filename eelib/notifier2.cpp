@@ -11,22 +11,14 @@ bool Notifier2::getOrder(long ordId, Order2& order) const{
     }
 };
 
-void Notifier2::matchFound(long makeId, long takeId, unsigned int transferQty){   
-    Order2 make, take;
-    getOrder(makeId, make);
-    getOrder(takeId, take);
+void Notifier2::matchFound(long makeId, long takeId, unsigned int transferQty){
+    const Order2& make = orderRegistery.at(makeId);
+    const Order2& take = orderRegistery.at(takeId);
 
     if(take.side == BUY){
-        Match2 match{
-            take, make, transferQty, make.price
-        };
-        matches.push_back(match);
-    }
-    else{
-        Match2 match{
-            make, take, transferQty, make.price
-        };
-        matches.push_back(match);
+        matches.emplace_back(take, make, transferQty, make.price);
+    } else {
+        matches.emplace_back(make, take, transferQty, make.price);
     }
 }
 
