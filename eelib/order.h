@@ -119,7 +119,7 @@ enum TimeInForce{
 };
 
 struct Order2{
-    std::string asset;
+    char asset[16];
     long traderId = -1;
     long ordId = -1;
     Side side;

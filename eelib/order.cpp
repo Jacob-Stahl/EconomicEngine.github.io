@@ -1,5 +1,6 @@
 
 #include <string>
+#include <cstring>
 #include "order.h"
 
 bool Order::treatAsMarket(const Spread& spread) const{
@@ -135,8 +136,13 @@ Order2 OrderBuilder::build(){
 }
 
 OrderBuilder& OrderBuilder::withAsset(const std::string& asset){
+
+    if(asset.length() > 15){
+        throw std::logic_error("Asset name must be 15 characters of less");
+    }
+
     assetSet = true;
-    order.asset = asset;
+    strcpy(order.asset, asset.c_str());
     return *this;
 }
 
