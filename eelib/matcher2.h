@@ -48,4 +48,7 @@ class Matcher2{
         // Keep this public or use friends?
         std::unique_ptr<Notifier2> notifier;
 
+        Matcher2(){
+            notifier = std::make_unique<Notifier2>();
+        };
 };

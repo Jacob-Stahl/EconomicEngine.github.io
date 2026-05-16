@@ -7,9 +7,7 @@ class Matcher2Test : public ::testing::Test {
 protected:
     Matcher2 matcher;
 
-    void SetUp() override {
-        matcher.notifier = std::make_unique<Notifier2>();
-    }
+    void SetUp() override {}
 
     Order2 makeLimit(long ordId, Side side, int price, unsigned int qty) {
         return OrderBuilder()
