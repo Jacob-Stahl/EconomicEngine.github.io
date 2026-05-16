@@ -106,7 +106,7 @@ void Matcher2::placeStop(const Order2& order){
     if(order.type == STOP) placeMarket(dormantStop.entry, order.side);
 }
 
-inline LimitsBin& Matcher2::getLimitsBin(int price, std::flat_map<int, LimitsBin>& bins){
+inline LimitsBin& Matcher2::getLimitsBin(int price, std::map<int, LimitsBin>& bins){
     auto [it, _] = bins.try_emplace(price, notifier.get());
     return it->second;
 }

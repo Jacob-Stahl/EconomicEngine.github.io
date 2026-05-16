@@ -51,10 +51,10 @@ public:
     Order2 randomOrder() {
         Side side = weighted_random_enum<Side>({1.0, 1.0});
         OrdType type = weighted_random_enum<OrdType>({
-            0.0,  // MARKET
+            0.1,  // MARKET
             1.0, // LIMIT
             0.0,  // STOP
-            1.0,  // STOPLIMIT
+            0.1,  // STOPLIMIT
         });
 
         unsigned int qty = qtyDist(gen);
@@ -89,7 +89,7 @@ void benchmarkMatcher(){
     Matcher2 matcher;
     OrderFactory factory{"TEST"};
 
-    const int numOrders = 1'000'000;
+    const int numOrders = 3'000'000;
     std::vector<Order2> orders;
     orders.reserve(numOrders);
 

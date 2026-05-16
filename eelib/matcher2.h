@@ -22,8 +22,8 @@ struct Depth{
 class Matcher2{
     private:
         // Limit orders by price
-        std::flat_map<int, LimitsBin> buyLimitBins;
-        std::flat_map<int, LimitsBin> sellLimitBins;
+        std::map<int, LimitsBin> buyLimitBins;
+        std::map<int, LimitsBin> sellLimitBins;
 
         // Active stop order are cleared and recursivally placed by placeOrder()
         std::vector<StopEntry> activeBuyStops;
@@ -31,7 +31,7 @@ class Matcher2{
 
         Spread spread;
 
-        LimitsBin& getLimitsBin(int price, std::flat_map<int, LimitsBin>& bins);
+        LimitsBin& getLimitsBin(int price, std::map<int, LimitsBin>& bins);
         void placeLimit(BookEntry& entry, Side side, int price);
         void placeMarket(BookEntry& entry, Side side);
         void placeStop(const Order2& order);
