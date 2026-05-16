@@ -33,8 +33,8 @@ class LimitsBin{
     private:
         std::vector<StopEntry> dormantStops;
         std::deque<BookEntry> entries;
-        unsigned int _totalQty = 0;
         Notifier2* notifier;
+        unsigned int _totalQty = 0;
         void notifyMatch(long makeId, long takeId, unsigned int transferQty);
 
     public:
