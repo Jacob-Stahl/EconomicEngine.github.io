@@ -1,6 +1,10 @@
 #include "matcher.h"
 
 void Matcher::placeOrder(const Order& order){
+    if(order.price < minPrice || order.price > (minPrice + priceRange)){
+        throw new std::logic_error("order.price is outside of matcher price range");
+    };
+
     notifier->registerOrder(order);
 
     // Place this order
