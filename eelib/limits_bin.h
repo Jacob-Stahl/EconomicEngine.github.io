@@ -33,14 +33,17 @@ class LimitsBin{
     private:
         std::vector<StopEntry> dormantStops;
         std::deque<BookEntry> entries;
-        Notifier2* notifier;
         unsigned int _totalQty = 0;
         void notifyMatch(long makeId, long takeId, unsigned int transferQty);
 
     public:
 
+        Notifier2* notifier = nullptr;
+
         /// @brief Takes raw pointer to notifier in Matcher2. LimitsBin has no effect on the nofifier lifetime
         /// @param _notifier 
+
+        LimitsBin() : notifier(nullptr) {};
         LimitsBin(Notifier2* _notifier): notifier(_notifier){};
         const unsigned int totalQty() const {return _totalQty; };
         void make(const BookEntry& makeEntry);

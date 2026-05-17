@@ -106,20 +106,31 @@ void Matcher2::placeStop(const Order2& order){
     if(order.type == STOP) placeMarket(dormantStop.entry, order.side);
 }
 
-inline LimitsBin& Matcher2::getLimitsBin(int price, std::map<int, LimitsBin>& bins){
-    auto [it, _] = bins.try_emplace(price, notifier.get());
-    return it->second;
+inline size_t Matcher2::priceToBinIdx(int price) const{
+    return price - minPrice;
+};
+
+inline int Matcher2::binIdxToPrice(size_t binIdx) const{
+    return binIdx + minPrice;
+} 
+
+inline LimitsBin& Matcher2::getLimitsBin(int price, std::vector<LimitsBin>& bins){
+    size_t priceIdx = priceToBinIdx(price);
+    return bins[priceIdx];
 }
 
-void Matcher2::takeSells(BookEntry& buyOrder, int maxPrice){
-    for(auto bin = sellLimitBins.lower_bound(spread.lowestAsk); bin != sellLimitBins.end(); bin++){
-        auto&& [price, limitsBin] = *bin;
+void Matcher2::takeSells(BookEntry& buyOrder, int maxLimitPrice){
+    size_t startIdx = priceToBinIdx(spread.lowestAsk);
+
+    for(auto binIdx = startIdx; binIdx < sellLimitBins.size(); ++binIdx){
+        int price = binIdxToPrice(binIdx);
+        auto&& limitsBin = sellLimitBins[binIdx];
 
         if(limitsBin.hasDormantStops()){
             limitsBin.moveAllStopsToActive(activeBuyStops);
         }
 
-        if(buyOrder.qty > 0 && price <= maxPrice){
+        if(buyOrder.qty > 0 && price <= maxLimitPrice){
             limitsBin.take(buyOrder); // first fill the order
         }
         if(limitsBin.totalQty() == 0){
@@ -134,14 +145,17 @@ void Matcher2::takeSells(BookEntry& buyOrder, int maxPrice){
     spread.asksMissing = true;
 }
 
-void Matcher2::takeBuys(BookEntry& sellOrder, int minPrice){
-    for(auto bin = std::reverse_iterator(buyLimitBins.upper_bound(spread.highestBid)); bin != buyLimitBins.rend(); bin++){
-        auto&& [price, limitsBin] = *bin;
+void Matcher2::takeBuys(BookEntry& sellOrder, int minLimitPrice){
+    size_t startIdx = priceToBinIdx(spread.highestBid);
+
+    for(auto binIdx = startIdx; binIdx != 0; --binIdx){
+        int price = binIdxToPrice(binIdx);
+        auto&& limitsBin = buyLimitBins[binIdx];
 
         if(limitsBin.hasDormantStops()){
             limitsBin.moveAllStopsToActive(activeSellStops);
         }
-        if(sellOrder.qty > 0 && price >= minPrice){
+        if(sellOrder.qty > 0 && price >= minLimitPrice){
             limitsBin.take(sellOrder);
         }
         if(limitsBin.totalQty() == 0){
@@ -180,16 +194,18 @@ const Depth Matcher2::getDepth() const {
     Depth depth;
 
     // Bids: highest price first
-    for (auto it = buyLimitBins.rbegin(); it != buyLimitBins.rend(); ++it) {
-        if (it->second.totalQty() > 0) {
-            depth.bidBins.push_back({it->first, it->second.totalQty()});
+    for (size_t binIdx = buyLimitBins.size() - 1; binIdx > 0; --binIdx) {
+        auto&& bin = buyLimitBins[binIdx];
+        if (bin.totalQty() > 0) {
+            depth.bidBins.push_back({binIdxToPrice(binIdx), bin.totalQty()});
         }
     }
 
     // Asks: lowest price first
-    for (auto it = sellLimitBins.begin(); it != sellLimitBins.end(); ++it) {
-        if (it->second.totalQty() > 0) {
-            depth.askBins.push_back({it->first, it->second.totalQty()});
+    for (size_t binIdx = 0; binIdx < sellLimitBins.size(); ++binIdx) {
+        auto&& bin = sellLimitBins[binIdx];
+        if (bin.totalQty() > 0) {
+            depth.askBins.push_back({binIdxToPrice(binIdx), bin.totalQty()});
         }
     }
 

@@ -21,9 +21,13 @@ struct Depth{
 
 class Matcher2{
     private:
+
+        int minPrice = -16384;
+        unsigned int priceRange = 32768;
+
         // Limit orders by price
-        std::map<int, LimitsBin> buyLimitBins;
-        std::map<int, LimitsBin> sellLimitBins;
+        std::vector<LimitsBin> buyLimitBins;
+        std::vector<LimitsBin> sellLimitBins;
 
         // Active stop order are cleared and recursivally placed by placeOrder()
         std::vector<StopEntry> activeBuyStops;
@@ -31,7 +35,9 @@ class Matcher2{
 
         Spread spread;
 
-        LimitsBin& getLimitsBin(int price, std::map<int, LimitsBin>& bins);
+        size_t priceToBinIdx(int price) const;
+        int binIdxToPrice(size_t binIdx) const;
+        LimitsBin& getLimitsBin(int price, std::vector<LimitsBin>& bins);
         void placeLimit(BookEntry& entry, Side side, int price);
         void placeMarket(BookEntry& entry, Side side);
         void placeStop(const Order2& order);
@@ -48,7 +54,14 @@ class Matcher2{
         // Keep this public or use friends?
         std::unique_ptr<Notifier2> notifier;
 
-        Matcher2(){
+        Matcher2(int minPrice_ = -16384, unsigned int priceRange_ = 32768): 
+            minPrice(minPrice_), 
+            priceRange(priceRange_),
+            buyLimitBins(priceRange_),
+            sellLimitBins(priceRange_)
+        {
             notifier = std::make_unique<Notifier2>();
+            for(auto& b : buyLimitBins)  b.notifier = notifier.get();
+            for(auto& b : sellLimitBins) b.notifier = notifier.get();
         };
 };
