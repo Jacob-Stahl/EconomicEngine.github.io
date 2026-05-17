@@ -1,34 +1,23 @@
 #pragma once
 
-#include "order.h"
 #include "match.h"
-#include <vector>
+#include "order.h"
+#include <unordered_map>
 
-// TODO: add cancelation notifications?
+// TODO notify filled orders
+// TODO remove filled orders from registery
 
-class INotifier{
+class Notifier{
     public:
-    virtual void notifyOrderPlaced(const Order& order) = 0;
-    virtual void notifyOrderPlacementFailed(const Order& order, std::string reason) = 0;
-    virtual void notifyOrderMatched(const Match& match) = 0;
-};
-
-/// @brief Stores events in public vectors
-class InMemoryNotifier: public INotifier{
-    public:
-        std::vector<Order> placedOrders;
-        std::vector<Order> placementFailedOrders;
-        std::vector<Match> matches;
-
-        InMemoryNotifier() = default;
-
-        void notifyOrderPlaced(const Order& order){
-            placedOrders.push_back(order);
+        void registerOrder(const Order& order){
+            orderRegistery.insert({order.ordId, order});
         }
-        void notifyOrderPlacementFailed(const Order& order, std::string reason){
-            placementFailedOrders.push_back(order);
-        }
-        void notifyOrderMatched(const Match& match){
-            matches.push_back(match);
-        }
+
+        void matchFound(long makeId, long takeId, unsigned int transferQty);
+        void cancelled(long ordId, unsigned int remainingQty);
+        bool getOrder(long ordId, Order& order) const;
+
+        std::unordered_map<long, Order> orderRegistery;
+        std::vector<Match2> matches;
+        std::vector<Order> cancellations;
 };

@@ -7,13 +7,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Sources for the eelib library
 set(EELIB_SOURCES
 		order.cpp
+		#matcher.cpp
+		#notifier.cpp
+		#abm.cpp
+		#agent.cpp
+		#agent_manager.cpp
 		matcher.cpp
 		notifier.cpp
-		abm.cpp
-		agent.cpp
-		agent_manager.cpp
-		matcher2.cpp
-		notifier2.cpp
 		limits_bin.cpp
 )
 

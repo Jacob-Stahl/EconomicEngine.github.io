@@ -1,14 +1,14 @@
 #pragma once
 
 #include "order.h"
-#include "notifier2.h"
+#include "notifier.h"
 #include <queue>
 
 struct BookEntry{
     long ordId = -1;
     unsigned int qty = 0;
     bool isCancelled = false;
-    BookEntry(const Order2& order) : 
+    BookEntry(const Order& order) : 
         ordId(order.ordId), 
         qty(order.qty){}
 };
@@ -19,7 +19,7 @@ struct StopEntry{
     int limitPrice;
     BookEntry entry;
 
-    StopEntry(const Order2& order) :
+    StopEntry(const Order& order) :
         timeInForce(order.timeInForce),
         type(order.type),
         limitPrice(order.price),
@@ -38,13 +38,13 @@ class LimitsBin{
 
     public:
 
-        Notifier2* notifier = nullptr;
+        Notifier* notifier = nullptr;
 
-        /// @brief Takes raw pointer to notifier in Matcher2. LimitsBin has no effect on the nofifier lifetime
+        /// @brief Takes raw pointer to notifier in Matcher. LimitsBin has no effect on the nofifier lifetime
         /// @param _notifier 
 
         LimitsBin() : notifier(nullptr) {};
-        LimitsBin(Notifier2* _notifier): notifier(_notifier){};
+        LimitsBin(Notifier* _notifier): notifier(_notifier){};
         const unsigned int totalQty() const {return _totalQty; };
         void make(const BookEntry& makeEntry);
         void take(BookEntry& takeEntry);

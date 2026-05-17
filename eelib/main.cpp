@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "order.h"
-#include "matcher2.h"
+#include "matcher.h"
 
 void benchmarkMatcher();
 
@@ -48,7 +48,7 @@ public:
         gen = std::mt19937(rd());
     }
 
-    Order2 randomOrder() {
+    Order randomOrder() {
         Side side = weighted_random_enum<Side>({1.0, 1.0});
         OrdType type = weighted_random_enum<OrdType>({
             0.1,  // MARKET
@@ -86,11 +86,11 @@ public:
 };
 
 void benchmarkMatcher(){
-    Matcher2 matcher;
+    Matcher matcher;
     OrderFactory factory{"TEST"};
 
-    const int numOrders = 30'000'000;
-    std::vector<Order2> orders;
+    const int numOrders = 1'000'000;
+    std::vector<Order> orders;
     orders.reserve(numOrders);
 
     for (int i = 0; i < numOrders; ++i) {

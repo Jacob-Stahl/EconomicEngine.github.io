@@ -2,11 +2,6 @@
 
 #include <string>
 
-// TODO order builder
-// TODO use string view for order builder somehow
-
-const int MAX_ASSET_LENGTH = 12;
-
 struct Spread{
     bool bidsMissing = true;
     bool asksMissing = true;
@@ -36,77 +31,6 @@ enum Side {
     SELL = 2,
 };
 
-struct Order{
-
-    /// @brief Id of the trader that placed this order
-    long traderId;
-    /// @brief Unique id of this order
-    long ordId;
-    /// @brief Buy or Sell
-    Side side;
-    /// @brief Quantity of the order.
-    unsigned int qty;
-    /// @brief Price of the order in cents.
-    unsigned short price;
-    /// @brief Stop price of the order.
-    unsigned short stopPrice;
-    /// @brief Asset
-    std::string asset;
-    /// @brief Order type (Market, Limit, Stop).
-    OrdType type;
-
-    // TODO add group number for bulk matching
-
-    /// @brief Time the order was recieved by the service
-    unsigned long ordNum;
-    /// @brief Number of items filled. 
-    unsigned int fill = 0;
-
-    /// @brief Determine if the order should be treated as a market order based on the current market price.
-    /// @param marketPrice 
-    /// @return 
-    bool treatAsMarket(const Spread& spread) const;
-
-    /// @brief Determine if the order should be treated as a limit order based on the current market price
-    /// @param spread 
-    /// @return 
-    bool treatAsLimit(const Spread& spread) const;
-
-    bool fillComplete() const {
-        return qty == fill;
-    }
-
-    unsigned int unfilled() const {
-        // A bit dangerous. unfilled should NEVER be negative
-        return qty - fill;
-    }
-
-    Order() = default;
-
-    Order(
-        std::string asset_,
-        Side side_,
-        OrdType type_,
-        unsigned short price_ = 0,
-        unsigned int qty_ = 0,
-        unsigned short stopPrice_ = 0
-    ){
-
-        // Limit the size of asset name lengths to take advantage of small string optimization (SSO)
-        if(asset_.length() > MAX_ASSET_LENGTH){
-            std::__throw_length_error("asset exceeds maximum length");
-        }
-
-        asset = asset_;
-        side = side_;
-        type = type_;
-        price = price_;
-        qty = qty_;
-        stopPrice = stopPrice_;
-    }
-};
-
-
 enum TimeInForce{
     /// @brief Good Til Cancelled
     GTC,
@@ -118,7 +42,7 @@ enum TimeInForce{
     FOC
 };
 
-struct Order2{
+struct Order{
     char asset[16];
     long traderId = -1;
     long ordId = -1;
@@ -131,7 +55,7 @@ struct Order2{
 };
 
 class OrderBuilder{
-    Order2 order{};
+    Order order{};
     bool typeSet = false;
     bool assetSet = false;
     bool traderIdSet = false;
@@ -147,5 +71,5 @@ class OrderBuilder{
         OrderBuilder& withTraderId(long traderId);
         OrderBuilder& withOrdId(long ordId);     
         
-        Order2 build();
+        Order build();
 };
