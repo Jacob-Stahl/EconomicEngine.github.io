@@ -89,7 +89,7 @@ void benchmarkMatcher(){
     Matcher matcher;
     OrderFactory factory{"TEST"};
 
-    const int numOrders = 1'000'000;
+    const int numOrders = 3'000'000;
     std::vector<Order> orders;
     orders.reserve(numOrders);
 

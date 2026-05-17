@@ -551,3 +551,41 @@ TEST_F(MatcherTest, GetDepth_DrainedLevelIsExcluded){
     EXPECT_EQ(100, depth.bidBins[0].price);
     EXPECT_EQ(2,   depth.bidBins[0].totalQty);
 }
+
+TEST_F(MatcherTest, NegativePriceLimitOrders_NoMatch_StateIsCorrect) {
+    // Arrange & Act
+    matcher.placeOrder(makeLimit(1, BUY,  -10, 1));
+    matcher.placeOrder(makeLimit(2, SELL,  -5, 1));
+
+    const Spread& spread = matcher.getSpread();
+
+    // No match: best bid (-10) < lowest ask (-5)
+    EXPECT_EQ(0, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+    EXPECT_EQ(2, matcher.notifier->orderRegistery.size());
+
+    EXPECT_FALSE(spread.bidsMissing);
+    EXPECT_FALSE(spread.asksMissing);
+    EXPECT_EQ(-10, spread.highestBid);
+    EXPECT_EQ(-5,  spread.lowestAsk);
+}
+
+TEST_F(MatcherTest, NegativePriceLimitOrders_SpreadCrossed_Matches) {
+    // Arrange & Act: bid crosses above ask (both negative)
+    matcher.placeOrder(makeLimit(1, BUY,  -5, 1));
+    matcher.placeOrder(makeLimit(2, SELL, -10, 1));
+
+    const Spread& spread = matcher.getSpread();
+
+    // One match expected at the resting ask price (-10)
+    EXPECT_EQ(1, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+
+    EXPECT_TRUE(spread.bidsMissing);
+    EXPECT_TRUE(spread.asksMissing);
+
+    EXPECT_EQ(1,   matcher.notifier->matches[0].buyer.ordId);
+    EXPECT_EQ(2,   matcher.notifier->matches[0].seller.ordId);
+    EXPECT_EQ(1,   matcher.notifier->matches[0].qty);
+    EXPECT_EQ(-10, matcher.notifier->matches[0].price);
+}

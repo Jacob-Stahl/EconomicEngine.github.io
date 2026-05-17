@@ -18,6 +18,6 @@ class Notifier{
         bool getOrder(long ordId, Order& order) const;
 
         std::unordered_map<long, Order> orderRegistery;
-        std::vector<Match2> matches;
+        std::vector<Match> matches;
         std::vector<Order> cancellations;
 };

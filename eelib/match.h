@@ -4,7 +4,7 @@
 #include "order.h"
 #include <stdexcept>
 
-struct Match2{
+struct Match{
     Order buyer;
     Order seller;
     long qty;
@@ -12,21 +12,11 @@ struct Match2{
     
 
     public:
-        Match2(const Order& ord1, const Order& ord2, long qty_, int price_)
-        {
-            if (ord1.side == ord2.side) { std::logic_error("Can't match orders on the same side!"); }
-            if (ord1.side == BUY){
-                buyer = ord1;
-                seller = ord2;
-            }
-            else{
-                buyer = ord2;
-                seller = ord1;
-            }
-
-            qty = qty_;
-            price = price_;
-        }
+        Match(const Order& buyer_, const Order& seller_, long qty_, int price_):
+            buyer(buyer_),
+            seller(seller_),
+            qty(qty_),
+            price(price_){}
 
         long cashTransfered() const{
 
