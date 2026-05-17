@@ -179,11 +179,11 @@ void Matcher2::cancelOrder(long ordId){
 
     unsigned int remainingQty = 0;
     if(doomedOrder.side == BUY){
-        auto& bin = buyLimitBins.at(doomedOrder.price);
+        auto& bin = buyLimitBins.at(priceToBinIdx(doomedOrder.price));
         bin.cancel(ordId, remainingQty);
     }
     else{
-        auto& bin = sellLimitBins.at(doomedOrder.price);
+        auto& bin = sellLimitBins.at(priceToBinIdx(doomedOrder.price));
         bin.cancel(ordId, remainingQty);
     }
 
