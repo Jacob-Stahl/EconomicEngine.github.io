@@ -577,7 +577,7 @@ TEST_F(MatcherTest, NegativePriceLimitOrders_SpreadCrossed_Matches) {
 
     const Spread& spread = matcher.getSpread();
 
-    // One match expected at the resting ask price (-10)
+    // One match expected at the resting bid price (-5)
     EXPECT_EQ(1, matcher.notifier->matches.size());
     EXPECT_EQ(0, matcher.notifier->cancellations.size());
 
@@ -587,5 +587,5 @@ TEST_F(MatcherTest, NegativePriceLimitOrders_SpreadCrossed_Matches) {
     EXPECT_EQ(1,   matcher.notifier->matches[0].buyer.ordId);
     EXPECT_EQ(2,   matcher.notifier->matches[0].seller.ordId);
     EXPECT_EQ(1,   matcher.notifier->matches[0].qty);
-    EXPECT_EQ(-10, matcher.notifier->matches[0].price);
+    EXPECT_EQ(-5, matcher.notifier->matches[0].price);
 }
