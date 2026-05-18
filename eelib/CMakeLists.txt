@@ -10,7 +10,7 @@ set(EELIB_SOURCES
 		#matcher.cpp
 		#notifier.cpp
 		#abm.cpp
-		#agent.cpp
+		agent.cpp
 		#agent_manager.cpp
 		matcher.cpp
 		notifier.cpp

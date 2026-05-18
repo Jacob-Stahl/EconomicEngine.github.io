@@ -52,6 +52,16 @@ struct Order{
     int price = 0;
     unsigned int qty = 0;
     int stopPrice = 0;
+
+    private:
+        Order() = default;
+
+    friend class OrderBuilder;
+
+    // TODO remove these later
+    friend class Matcher;
+    friend class Notifier;
+
 };
 
 class OrderBuilder{

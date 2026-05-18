@@ -81,8 +81,13 @@ Action Consumer::policy(const Observation& observation){
     ++state->sinceLastFill;
 
     // qty always set to 1 to avoid partial fills
-    Order order(state->asset, BUY, LIMIT, price, 1);
-    
+    Order order = OrderBuilder()
+        .limit(BUY, price, 1)
+        .withAsset(state->asset)
+        .withTraderId(traderId)
+        .withOrdId(-1)
+        .build();
+
     if (state->orderOnBookId > 0) {
         return Action{order, state->orderOnBookId};
     } else {
@@ -143,7 +148,13 @@ Action Producer::policy(const Observation& observation) {
             --state->qtyPerTick;
     }
 
-    Order order(state->asset, SELL, MARKET, 0, state->qtyPerTick);
+    if (state->qtyPerTick == 0) return Action{};
+    Order order = OrderBuilder()
+        .market(SELL, state->qtyPerTick)
+        .withAsset(state->asset)
+        .withTraderId(traderId)
+        .withOrdId(-1)
+        .build();
     return Action{order};
 }
 
@@ -250,14 +261,14 @@ std::vector<Order> Manufacturer::procurementOrders(
                 std::numeric_limits<unsigned short>::max()));
         }
 
-        orders.emplace_back(
-            asset,
-            BUY,
-            LIMIT,
-            bidPrice,
-            static_cast<unsigned int>(std::min<long>(
+        orders.push_back(OrderBuilder()
+            .limit(BUY, bidPrice, static_cast<unsigned int>(std::min<long>(
                 deficit,
-                std::numeric_limits<unsigned int>::max())));
+                std::numeric_limits<unsigned int>::max())))
+            .withAsset(asset)
+            .withTraderId(traderId)
+            .withOrdId(-1)
+            .build());
     }
 
     return orders;
@@ -312,14 +323,14 @@ std::vector<Order> Manufacturer::sellOrders() {
             continue;
         }
 
-        orders.emplace_back(
-            asset,
-            SELL,
-            MARKET,
-            0,
-            static_cast<unsigned int>(std::min<long>(
+        orders.push_back(OrderBuilder()
+            .market(SELL, static_cast<unsigned int>(std::min<long>(
                 inventoryQty,
-                std::numeric_limits<unsigned int>::max())));
+                std::numeric_limits<unsigned int>::max())))
+            .withAsset(asset)
+            .withTraderId(traderId)
+            .withOrdId(-1)
+            .build());
     }
 
     return orders;
@@ -420,13 +431,12 @@ Action Person::policy(const Observation& observation){
     }
 
     // SELL MARKET 1 unit of labor
-    Order sell(
-        "LABOR",
-        SELL,
-        MARKET, 
-        0, 
-        1
-    );
+    Order sell = OrderBuilder()
+        .market(SELL, 1)
+        .withAsset("LABOR")
+        .withTraderId(traderId)
+        .withOrdId(-1)
+        .build();
     action.addOrder(sell);
 
     // Don't place buys if there are no desires
@@ -442,13 +452,12 @@ Action Person::policy(const Observation& observation){
             });
 
     unsigned short price = mostDesired->proportionToDeath() * state->spendingPower;
-    Order buy(
-        mostDesired->asset,
-        BUY,
-        LIMIT,
-        price,
-        1
-    );
+    Order buy = OrderBuilder()
+        .limit(BUY, price, 1)
+        .withAsset(mostDesired->asset)
+        .withTraderId(traderId)
+        .withOrdId(-1)
+        .build();
     action.addOrder(buy);
     state->incrementAllDesireTicks();
     return action;
