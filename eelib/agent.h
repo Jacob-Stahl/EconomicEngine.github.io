@@ -36,15 +36,19 @@ class ActionBuilder{
     public:
         ActionBuilder& withOrder(const Order& order){
             action.ordersToPlace.push_back(order);
+            return *this;
         }
         ActionBuilder& withOrders(std::vector<Order>& orders){
             action.ordersToPlace.insert(action.ordersToPlace.end(), orders.begin(), orders.end());
+            return *this;
         }
         ActionBuilder& withCancellation(long ordId){
             action.orderIdsToCancel.push_back(ordId);
+            return *this;
         }
         ActionBuilder& withCancellations(const std::vector<long>& ordIds){
             action.orderIdsToCancel.insert(action.orderIdsToCancel.end(), ordIds.begin(), ordIds.end());
+            return *this;
         }
 
         void newAction(){
