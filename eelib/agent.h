@@ -70,7 +70,7 @@ class Agent{
         Agent(long);
         virtual ~Agent() = default;
 
-        virtual Action policy(const Observation& observation);
+        virtual Action policy(const Observation& observation){return actionBuilder.build();};;
 
         virtual void matchFound(const Match& match, const tick now){};
         virtual void orderPlaced(long orderId, const tick now){};

@@ -31,7 +31,3 @@ std::vector<Recipe> parseRecipesJson(const std::string& jsonText) {
 
 Agent::Agent(long id) : traderId(id) {}
 
-Action Agent::policy(const Observation& observation) {
-    return Action();
-}
-
