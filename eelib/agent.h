@@ -11,7 +11,6 @@
 #include <memory>
 #include <vector>
 
-
 struct AssetObservation{
     Spread spread;
     Depth depth;
@@ -28,6 +27,11 @@ struct Observation{
 struct Action{
     std::vector<Order> ordersToPlace;
     std::vector<long> orderIdsToCancel;
+
+    private:
+        Action() = default;
+
+    friend class ActionBuilder;
 };
 
 class ActionBuilder{
@@ -51,17 +55,18 @@ class ActionBuilder{
             return *this;
         }
 
-        void newAction(){
-            action = Action();
-        }
         Action build(){
-            return action;
+            auto builtAction = std::move(action);
+            action = Action{};
+            return builtAction;
         }
 };
 
 class Agent{
     public:
         long traderId;
+        ActionBuilder actionBuilder;
+
         Agent(long);
         virtual ~Agent() = default;
 
@@ -72,7 +77,7 @@ class Agent{
         virtual void orderCanceled(long orderId, const tick now){};
 
         /// @brief Final action before agent is removed from ABM
-        virtual Action lastWill(const Observation& observation){return Action();};
+        virtual Action lastWill(const Observation& observation){return actionBuilder.build();};
 };
 
 struct Recipe {
