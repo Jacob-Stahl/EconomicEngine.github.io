@@ -15,7 +15,7 @@ struct AssetObservation{
     Spread spread;
     Depth depth;
     //MarketBacklog marketBacklog;
-    long volumePerTick = 0;
+    std::int64_t volumePerTick = 0;
 };
 
 // TODO: create AssetObservation struct with all properties, and use a single asset - AssetObservation map
@@ -26,7 +26,7 @@ struct Observation{
 
 struct Action{
     std::vector<Order> ordersToPlace;
-    std::vector<long> orderIdsToCancel;
+    std::vector<std::int64_t> orderIdsToCancel;
 
     private:
         Action() = default;
@@ -46,11 +46,11 @@ class ActionBuilder{
             action.ordersToPlace.insert(action.ordersToPlace.end(), orders.begin(), orders.end());
             return *this;
         }
-        ActionBuilder& withCancellation(long ordId){
+        ActionBuilder& withCancellation(std::int64_t ordId){
             action.orderIdsToCancel.push_back(ordId);
             return *this;
         }
-        ActionBuilder& withCancellations(const std::vector<long>& ordIds){
+        ActionBuilder& withCancellations(const std::vector<std::int64_t>& ordIds){
             action.orderIdsToCancel.insert(action.orderIdsToCancel.end(), ordIds.begin(), ordIds.end());
             return *this;
         }
@@ -64,17 +64,17 @@ class ActionBuilder{
 
 class Agent{
     public:
-        long traderId;
+        std::int64_t traderId;
         ActionBuilder actionBuilder;
 
-        Agent(long);
+        Agent(std::int64_t id) : traderId(id) {};
         virtual ~Agent() = default;
 
         virtual Action policy(const Observation& observation){return actionBuilder.build();};;
 
         virtual void matchFound(const Match& match, const tick now){};
-        virtual void orderPlaced(long orderId, const tick now){};
-        virtual void orderCanceled(long orderId, const tick now){};
+        virtual void orderPlaced(std::int64_t orderId, const tick now){};
+        virtual void orderCanceled(std::int64_t orderId, const tick now){};
 
         /// @brief Final action before agent is removed from ABM
         virtual Action lastWill(const Observation& observation){return actionBuilder.build();};
@@ -82,17 +82,17 @@ class Agent{
 
 struct Recipe {
     // Asset - Amount
-    std::map<std::string, int> inputs;
-    std::map<std::string, int> outputs;
+    std::map<std::string, std::uint32_t> inputs;
+    std::map<std::string, std::uint32_t> outputs;
 
-    int cost = 0;
+    std::int32_t cost = 0;
 
     Recipe() = default;
 
     Recipe(
-        std::initializer_list<std::pair<const std::string, int>> inputs_,
-        std::initializer_list<std::pair<const std::string, int>> outputs_,
-        long cost_ = 0)
+        std::initializer_list<std::pair<const std::string, std::uint32_t>> inputs_,
+        std::initializer_list<std::pair<const std::string, std::uint32_t>> outputs_,
+        std::int32_t cost_ = 0)
         : inputs(inputs_),
           outputs(outputs_),
           cost(cost_)

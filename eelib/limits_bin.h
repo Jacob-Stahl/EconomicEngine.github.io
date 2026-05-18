@@ -5,8 +5,8 @@
 #include <queue>
 
 struct BookEntry{
-    long ordId = -1;
-    unsigned int qty = 0;
+    std::int64_t ordId = -1;
+    std::uint32_t qty = 0;
     bool isCancelled = false;
     BookEntry(const Order& order) : 
         ordId(order.ordId), 
@@ -16,7 +16,7 @@ struct BookEntry{
 struct StopEntry{
     TimeInForce timeInForce;
     OrdType type;
-    int limitPrice;
+    std::int32_t limitPrice;
     BookEntry entry;
 
     StopEntry(const Order& order) :
@@ -33,8 +33,8 @@ class LimitsBin{
     private:
         std::vector<StopEntry> dormantStops;
         std::deque<BookEntry> entries;
-        unsigned int _totalQty = 0;
-        void notifyMatch(long makeId, long takeId, unsigned int transferQty);
+        std::uint32_t _totalQty = 0;
+        void notifyMatch(std::int64_t makeId, std::int64_t takeId, std::uint32_t transferQty);
 
     public:
 
@@ -45,10 +45,10 @@ class LimitsBin{
 
         LimitsBin() : notifier(nullptr) {};
         LimitsBin(Notifier* _notifier): notifier(_notifier){};
-        const unsigned int totalQty() const {return _totalQty; };
+        const std::uint32_t totalQty() const {return _totalQty; };
         void make(const BookEntry& makeEntry);
         void take(BookEntry& takeEntry);
-        bool cancel(long ordId, unsigned int& remainingQty);
+        bool cancel(std::int64_t ordId, std::uint32_t& remainingQty);
 
         bool hasDormantStops() const;
         void addDormantStop(const StopEntry& dormantStop);

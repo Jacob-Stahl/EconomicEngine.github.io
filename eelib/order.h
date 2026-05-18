@@ -44,14 +44,14 @@ enum TimeInForce{
 
 struct Order{
     char asset[16];
-    long traderId = -1;
-    long ordId = -1;
+    std::int64_t traderId = -1;
+    std::int64_t ordId = -1;
     Side side;
     OrdType type;
     TimeInForce timeInForce;
-    int price = 0;
-    unsigned int qty = 0;
-    int stopPrice = 0;
+    std::int32_t price = 0;
+    std::uint32_t qty = 0;
+    std::int32_t stopPrice = 0;
 
     private:
         Order() = default;
@@ -72,14 +72,14 @@ class OrderBuilder{
     bool ordIdSet = false;
 
     public:
-        OrderBuilder& limit(Side side, int price, unsigned int qty);
-        OrderBuilder& market(Side side, unsigned int qty);
-        OrderBuilder& stop(Side side, int stopPrice, unsigned int qty);
-        OrderBuilder& stopLimit(Side side, int price, int stopPrice, unsigned int qty);
+        OrderBuilder& limit(Side side, std::int32_t price, std::uint32_t qty);
+        OrderBuilder& market(Side side, std::uint32_t qty);
+        OrderBuilder& stop(Side side, std::int32_t stopPrice, std::uint32_t qty);
+        OrderBuilder& stopLimit(Side side, std::int32_t price, std::int32_t stopPrice, std::uint32_t qty);
 
         OrderBuilder& withAsset(const std::string& asset);
-        OrderBuilder& withTraderId(long traderId);
-        OrderBuilder& withOrdId(long ordId);     
+        OrderBuilder& withTraderId(std::int64_t traderId);
+        OrderBuilder& withOrdId(std::int64_t ordId);     
         
         Order build();
 };

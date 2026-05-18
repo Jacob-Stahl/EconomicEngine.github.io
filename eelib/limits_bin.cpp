@@ -17,7 +17,7 @@ void LimitsBin::take(BookEntry& takeEntry){
         }
 
         // transfer matching qty
-        unsigned int transferQty = std::min(takeEntry.qty, makeEntry.qty);
+        std::uint32_t transferQty = std::min(takeEntry.qty, makeEntry.qty);
         takeEntry.qty -= transferQty;
         makeEntry.qty -= transferQty;
         _totalQty -= transferQty;
@@ -32,7 +32,7 @@ void LimitsBin::take(BookEntry& takeEntry){
     };
 }
 
-bool LimitsBin::cancel(long ordId, unsigned int& remainingQty){
+bool LimitsBin::cancel(std::int64_t ordId, std::uint32_t& remainingQty){
     for(auto& order : entries){
         if(order.ordId == ordId){
             order.isCancelled = true;
@@ -44,7 +44,7 @@ bool LimitsBin::cancel(long ordId, unsigned int& remainingQty){
     return false;
 }
 
-void LimitsBin::notifyMatch(long makeId, long takeId, unsigned int transferQty){
+void LimitsBin::notifyMatch(std::int64_t makeId, std::int64_t takeId, std::uint32_t transferQty){
     notifier->matchFound(makeId, takeId, transferQty);
 }
 

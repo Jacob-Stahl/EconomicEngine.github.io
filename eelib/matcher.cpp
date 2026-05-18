@@ -1,7 +1,7 @@
 #include "matcher.h"
 
 void Matcher::placeOrder(const Order& order){
-    if(order.price < minPrice || order.price > (minPrice + (int)priceRange)){
+    if(order.price < minPrice || order.price > (minPrice + (std::int32_t)priceRange)){
         throw new std::logic_error("order.price is outside of matcher price range");
     };
 
@@ -35,7 +35,7 @@ void Matcher::placeOrder(const Order& order){
     }
 }
 
-void Matcher::placeLimit(BookEntry& entry, Side side, int price){
+void Matcher::placeLimit(BookEntry& entry, Side side, std::int32_t price){
     if(side == BUY){
         // try to match if it crosses the spread
         if(!spread.asksMissing && spread.lowestAsk <= price){
@@ -110,24 +110,24 @@ void Matcher::placeStop(const Order& order){
     if(order.type == STOP) placeMarket(dormantStop.entry, order.side);
 }
 
-inline size_t Matcher::priceToBinIdx(int price) const{
+inline size_t Matcher::priceToBinIdx(std::int32_t price) const{
     return price - minPrice;
 };
 
-inline int Matcher::binIdxToPrice(size_t binIdx) const{
+inline std::int32_t Matcher::binIdxToPrice(size_t binIdx) const{
     return binIdx + minPrice;
 } 
 
-inline LimitsBin& Matcher::getLimitsBin(int price, std::vector<LimitsBin>& bins){
+inline LimitsBin& Matcher::getLimitsBin(std::int32_t price, std::vector<LimitsBin>& bins){
     size_t priceIdx = priceToBinIdx(price);
     return bins[priceIdx];
 }
 
-void Matcher::takeSells(BookEntry& buyOrder, int maxLimitPrice){
+void Matcher::takeSells(BookEntry& buyOrder, std::int32_t maxLimitPrice){
     size_t startIdx = priceToBinIdx(spread.lowestAsk);
 
     for(auto binIdx = startIdx; binIdx < sellLimitBins.size(); ++binIdx){
-        int price = binIdxToPrice(binIdx);
+        std::int32_t price = binIdxToPrice(binIdx);
         auto&& limitsBin = sellLimitBins[binIdx];
 
         if(limitsBin.hasDormantStops()){
@@ -149,11 +149,11 @@ void Matcher::takeSells(BookEntry& buyOrder, int maxLimitPrice){
     spread.asksMissing = true;
 }
 
-void Matcher::takeBuys(BookEntry& sellOrder, int minLimitPrice){
+void Matcher::takeBuys(BookEntry& sellOrder, std::int32_t minLimitPrice){
     size_t startIdx = priceToBinIdx(spread.highestBid);
 
     for(auto binIdx = startIdx; binIdx != 0; --binIdx){
-        int price = binIdxToPrice(binIdx);
+        std::int32_t price = binIdxToPrice(binIdx);
         auto&& limitsBin = buyLimitBins[binIdx];
 
         if(limitsBin.hasDormantStops()){
@@ -174,14 +174,14 @@ void Matcher::takeBuys(BookEntry& sellOrder, int minLimitPrice){
     spread.bidsMissing = true;
 }
 
-void Matcher::cancelOrder(long ordId){
+void Matcher::cancelOrder(std::int64_t ordId){
     Order doomedOrder;
     bool orderOnBook = notifier->getOrder(ordId, doomedOrder);
     if(!orderOnBook){
         return;
     }
 
-    unsigned int remainingQty = 0;
+    std::uint32_t remainingQty = 0;
     if(doomedOrder.side == BUY){
         auto& bin = buyLimitBins.at(priceToBinIdx(doomedOrder.price));
         bin.cancel(ordId, remainingQty);

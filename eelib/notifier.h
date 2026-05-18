@@ -13,11 +13,11 @@ class Notifier{
             orderRegistery.insert({order.ordId, order});
         }
 
-        void matchFound(long makeId, long takeId, unsigned int transferQty);
-        void cancelled(long ordId, unsigned int remainingQty);
-        bool getOrder(long ordId, Order& order) const;
+        void matchFound(std::int64_t makeId, std::int64_t takeId, std::uint32_t transferQty);
+        void cancelled(std::int64_t ordId, std::uint32_t remainingQty);
+        bool getOrder(std::int64_t ordId, Order& order) const;
 
-        std::unordered_map<long, Order> orderRegistery;
+        std::unordered_map<std::int64_t, Order> orderRegistery;
         std::vector<Match> matches;
         std::vector<Order> cancellations;
 };

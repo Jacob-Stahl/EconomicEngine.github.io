@@ -3,7 +3,7 @@
 #include <cstring>
 #include "order.h"
 
-OrderBuilder& OrderBuilder::limit(Side side, int price, unsigned int qty){
+OrderBuilder& OrderBuilder::limit(Side side, std::int32_t price, std::uint32_t qty){
     typeSet = true;
 
     order.type = LIMIT;
@@ -15,7 +15,7 @@ OrderBuilder& OrderBuilder::limit(Side side, int price, unsigned int qty){
     return *this;
 }
 
-OrderBuilder& OrderBuilder::stopLimit(Side side, int price, int stopPrice, unsigned int qty){
+OrderBuilder& OrderBuilder::stopLimit(Side side, std::int32_t price, std::int32_t stopPrice, std::uint32_t qty){
     if(price == stopPrice){
         throw std::logic_error("STOPLIMIT stop price can't be the same as the limit price. Place a LIMIT instead.");
     }
@@ -41,7 +41,7 @@ OrderBuilder& OrderBuilder::stopLimit(Side side, int price, int stopPrice, unsig
     return *this;
 }
 
-OrderBuilder& OrderBuilder::market(Side side, unsigned int qty){
+OrderBuilder& OrderBuilder::market(Side side, std::uint32_t qty){
     typeSet = true;
     order.type = MARKET;
     order.side = side;
@@ -51,7 +51,7 @@ OrderBuilder& OrderBuilder::market(Side side, unsigned int qty){
     return *this;
 }
 
-OrderBuilder& OrderBuilder::stop(Side side, int stopPrice, unsigned int qty){
+OrderBuilder& OrderBuilder::stop(Side side, std::int32_t stopPrice, std::uint32_t qty){
     typeSet = true;
     order.type = STOP;
     order.side = side;
@@ -98,13 +98,13 @@ OrderBuilder& OrderBuilder::withAsset(const std::string& asset){
     return *this;
 }
 
-OrderBuilder& OrderBuilder::withTraderId(long traderId){
+OrderBuilder& OrderBuilder::withTraderId(std::int64_t traderId){
     traderIdSet = true;
     order.traderId = traderId;
     return *this;
 }
 
-OrderBuilder& OrderBuilder::withOrdId(long ordId){
+OrderBuilder& OrderBuilder::withOrdId(std::int64_t ordId){
     ordIdSet = true;
     order.ordId = ordId;
     return *this;

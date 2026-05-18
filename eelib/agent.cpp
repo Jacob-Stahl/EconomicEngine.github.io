@@ -8,7 +8,7 @@
 void from_json(const nlohmann::json& j, Recipe& recipe) {
     j.at("inputs").get_to(recipe.inputs);
     j.at("outputs").get_to(recipe.outputs);
-    recipe.cost = j.value("cost", 0L);
+    recipe.cost = j.value("cost", std::int32_t{0});
 }
 
 
@@ -28,6 +28,3 @@ std::vector<Recipe> parseRecipesJson(const std::string& jsonText) {
         "recipe JSON must be an object or array",
         &parsed);
 }
-
-Agent::Agent(long id) : traderId(id) {}
-
