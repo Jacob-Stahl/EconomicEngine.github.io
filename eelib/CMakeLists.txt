@@ -42,6 +42,3 @@ target_include_directories(test_eelib BEFORE PRIVATE
 	${googletest_SOURCE_DIR}/googletest
 )
 target_link_libraries(test_eelib PRIVATE eelib gtest_main)
-
-# TODO remove CTest
-add_test(NAME eelib_tests COMMAND test_eelib)
