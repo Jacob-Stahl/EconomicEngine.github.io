@@ -98,5 +98,3 @@ struct Recipe {
           cost(cost_)
     {}
 };
-
-std::vector<Recipe> parseRecipesJson(const std::string& jsonText);

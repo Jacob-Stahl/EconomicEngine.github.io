@@ -35,18 +35,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-find_package(nlohmann_json CONFIG QUIET)
-if(NOT nlohmann_json_FOUND)
-	FetchContent_Declare(
-		nlohmann_json
-		GIT_REPOSITORY https://github.com/nlohmann/json.git
-		GIT_TAG v3.11.3
-	)
-	FetchContent_MakeAvailable(nlohmann_json)
-endif()
-
-target_link_libraries(eelib PUBLIC nlohmann_json::nlohmann_json)
-
 file(GLOB TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp")
 add_executable(test_eelib ${TEST_SOURCES})
 target_include_directories(test_eelib BEFORE PRIVATE
