@@ -13,7 +13,7 @@ Action Consumer::policy(const Observation& observation){
     ++state->sinceLastFill;
 
     // qty always set to 1 to avoid partial fills
-    Order order = OrderBuilder()
+    Order order = orderBuilder
         .limit(BUY, price, 1)
         .withAsset(state->asset)
         .withTraderId(traderId)

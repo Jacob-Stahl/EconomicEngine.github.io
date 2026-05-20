@@ -19,6 +19,7 @@ set(EELIB_SOURCES
 		# agents
 		agents/agent.cpp
 		agents/consumer.cpp
+		agents/producer.cpp
 )
 
 add_library(eelib STATIC ${EELIB_SOURCES})

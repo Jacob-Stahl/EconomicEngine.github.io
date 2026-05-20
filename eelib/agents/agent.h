@@ -66,6 +66,7 @@ class Agent{
     public:
         std::int64_t traderId;
         ActionBuilder actionBuilder;
+        OrderBuilder orderBuilder;
 
         Agent(std::int64_t id) : traderId(id) {};
         virtual ~Agent() = default;
