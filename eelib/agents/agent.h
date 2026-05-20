@@ -98,3 +98,26 @@ struct Recipe {
           cost(cost_)
     {}
 };
+
+class Inventory {
+    std::map<std::string, std::int64_t> assetBalance{};
+    std::int64_t cashBalance = 0;
+
+    public:
+        Inventory() = default;
+        void update(const Match& match, std::int64_t thisTraderId);
+        void update(
+            const std::string& asset,
+            std::int32_t qtyChange,
+            std::int64_t cashChange,
+            std::int64_t thisTraderId);
+
+        std::int64_t assetBalance(const std::string& asset) const {
+            auto it = assetBalance.find(asset);
+            return it == assetBalance.end() ? 0 : it->second;
+        }
+
+        std::int64_t cashBalance() const {
+            return cashBalance;
+        }
+};
