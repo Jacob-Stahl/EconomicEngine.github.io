@@ -37,28 +37,11 @@ class ActionBuilder{
     Action action{};
 
     public:
-        ActionBuilder& withOrder(const Order& order){
-            action.ordersToPlace.push_back(order);
-            return *this;
-        }
-        ActionBuilder& withOrders(std::vector<Order>& orders){
-            action.ordersToPlace.insert(action.ordersToPlace.end(), orders.begin(), orders.end());
-            return *this;
-        }
-        ActionBuilder& withCancellation(std::int64_t ordId){
-            action.orderIdsToCancel.push_back(ordId);
-            return *this;
-        }
-        ActionBuilder& withCancellations(const std::vector<std::int64_t>& ordIds){
-            action.orderIdsToCancel.insert(action.orderIdsToCancel.end(), ordIds.begin(), ordIds.end());
-            return *this;
-        }
-
-        Action build(){
-            auto builtAction = std::move(action);
-            action = Action{};
-            return builtAction;
-        }
+        ActionBuilder& withOrder(const Order& order);
+        ActionBuilder& withOrders(std::vector<Order>& orders);
+        ActionBuilder& withCancellation(std::int64_t ordId);
+        ActionBuilder& withCancellations(const std::vector<std::int64_t>& ordIds);
+        Action build();
 };
 
 class Agent{
@@ -67,17 +50,17 @@ class Agent{
         ActionBuilder actionBuilder;
         OrderBuilder orderBuilder;
 
-        Agent(std::int64_t id) : traderId(id) {};
+        Agent(std::int64_t id);
         virtual ~Agent() = default;
 
-        virtual Action policy(const Observation& observation){return actionBuilder.build();};;
+        virtual Action policy(const Observation& observation);
 
-        virtual void matchFound(const Match& match, const tick now){};
-        virtual void orderPlaced(std::int64_t orderId, const tick now){};
-        virtual void orderCanceled(std::int64_t orderId, const tick now){};
+        virtual void matchFound(const Match& match, const tick now);
+        virtual void orderPlaced(std::int64_t orderId, const tick now);
+        virtual void orderCanceled(std::int64_t orderId, const tick now);
 
         /// @brief Final action before agent is removed from ABM
-        virtual Action lastWill(const Observation& observation){return actionBuilder.build();};
+        virtual Action lastWill(const Observation& observation);
 };
 
 struct Recipe {
@@ -100,8 +83,8 @@ struct Recipe {
 };
 
 class Inventory {
-    std::map<std::string, std::int64_t> assetBalance{};
-    std::int64_t cashBalance = 0;
+    std::map<std::string, std::int64_t> _assetBalance{};
+    std::int64_t _cashBalance = 0;
 
     public:
         Inventory() = default;
@@ -112,12 +95,6 @@ class Inventory {
             std::int64_t cashChange,
             std::int64_t thisTraderId);
 
-        std::int64_t assetBalance(const std::string& asset) const {
-            auto it = assetBalance.find(asset);
-            return it == assetBalance.end() ? 0 : it->second;
-        }
-
-        std::int64_t cashBalance() const {
-            return cashBalance;
-        }
+        std::int64_t assetBalance(const std::string& asset) const;
+        std::int64_t cashBalance() const;
 };
