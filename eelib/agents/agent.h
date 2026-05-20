@@ -18,7 +18,6 @@ struct AssetObservation{
     std::int64_t volumePerTick = 0;
 };
 
-// TODO: create AssetObservation struct with all properties, and use a single asset - AssetObservation map
 struct Observation{
     tick time;
     std::map<std::string, AssetObservation> assetObservations;
