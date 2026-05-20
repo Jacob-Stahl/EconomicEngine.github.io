@@ -84,7 +84,9 @@ Order OrderBuilder::build(){
         throw std::logic_error("Order qty must be > 0");
     };
 
-    return order;
+    auto builtOrder = std::move(order);
+    order = Order{};
+    return builtOrder;
 }
 
 OrderBuilder& OrderBuilder::withAsset(const std::string& asset){
