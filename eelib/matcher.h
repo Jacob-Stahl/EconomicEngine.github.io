@@ -41,8 +41,8 @@ class Matcher{
         void placeLimit(BookEntry& entry, Side side, std::int32_t price);
         void placeMarket(BookEntry& entry, Side side);
         void placeStop(const Order& order);
-        void takeSells(BookEntry& takeEntry, std::int32_t maxPrice = INT32_MAX);
-        void takeBuys(BookEntry& takeEntry, std::int32_t minPrice = INT32_MIN);
+        void takeSells(BookEntry& takeEntry, std::int32_t maxPrice = std::numeric_limits<std::int32_t>::max());
+        void takeBuys(BookEntry& takeEntry, std::int32_t minPrice = std::numeric_limits<std::int32_t>::min());
 
     public:
         void placeOrder(const Order& order);
