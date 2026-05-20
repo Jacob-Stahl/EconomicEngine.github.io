@@ -10,11 +10,15 @@ set(EELIB_SOURCES
 		#matcher.cpp
 		#notifier.cpp
 		#abm.cpp
-		agent.cpp
+
 		#agent_manager.cpp
 		matcher.cpp
 		notifier.cpp
 		limits_bin.cpp
+
+		# agents
+		agents/agent.cpp
+		agents/consumer.cpp
 )
 
 add_library(eelib STATIC ${EELIB_SOURCES})

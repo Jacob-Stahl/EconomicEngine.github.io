@@ -1,8 +1,8 @@
 #pragma once
 
-#include "matcher.h"
-#include "match.h"
-#include "tick.h"
+#include "../matcher.h"
+#include "../match.h"
+#include "../tick.h"
 
 #include <string>
 #include <functional>
