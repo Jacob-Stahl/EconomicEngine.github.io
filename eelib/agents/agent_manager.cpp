@@ -1,4 +1,4 @@
-#include "agent_manager.h"clampInt32Sample
+#include "agent_manager.h"
 #include <cmath>
 #include <algorithm>
 #include <limits>

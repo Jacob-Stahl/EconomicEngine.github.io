@@ -7,11 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Sources for the eelib library
 set(EELIB_SOURCES
 		order.cpp
-		#matcher.cpp
-		#notifier.cpp
-		#abm.cpp
-
-		#agent_manager.cpp
 		matcher.cpp
 		notifier.cpp
 		limits_bin.cpp
@@ -20,6 +15,12 @@ set(EELIB_SOURCES
 		agents/agent.cpp
 		agents/consumer.cpp
 		agents/producer.cpp
+		agents/manufacturer.cpp
+		agents/person.cpp
+		agents/abm.cpp
+		agents/agent_manager.cpp
+
+
 )
 
 add_library(eelib STATIC ${EELIB_SOURCES})
