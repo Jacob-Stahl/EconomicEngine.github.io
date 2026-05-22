@@ -7,7 +7,6 @@
 #include <memory>
 #include <vector>
 
-namespace {
 
 tick clampTickSample(double value) {
     return tick(static_cast<tick::rep>(std::clamp(
@@ -22,9 +21,6 @@ unsigned short clampUnsignedShortSample(double value) {
         0.0,
         static_cast<double>(std::numeric_limits<unsigned short>::max())));
 }
-
-}
-
 
 std::unique_ptr<Agent> AgentManager::factory(){
     return nullptr;
