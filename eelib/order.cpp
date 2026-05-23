@@ -111,3 +111,12 @@ OrderBuilder& OrderBuilder::withOrdId(std::int64_t ordId){
     order.ordId = ordId;
     return *this;
 }
+
+OrderBuilder& OrderBuilder::withIncrementedOrderId(){
+    static std::int64_t nextOrdId = 1;
+
+    ordIdSet = true;
+    nextOrdId++;
+    order.ordId = nextOrdId;
+    return *this;
+}

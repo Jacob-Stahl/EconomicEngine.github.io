@@ -80,6 +80,7 @@ class OrderBuilder{
         OrderBuilder& withAsset(const std::string& asset);
         OrderBuilder& withTraderId(std::int64_t traderId);
         OrderBuilder& withOrdId(std::int64_t ordId);     
+        OrderBuilder& withIncrementedOrderId();
         
         Order build();
 };

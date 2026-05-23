@@ -79,8 +79,6 @@ void ABM::simStep() {
         // Handle order placements
         for (const auto& requestedOrder : action.ordersToPlace) {
             Order order{requestedOrder};
-            order.traderId = agent->traderId;
-            order.ordId = ++nextOrderId;
             addMatcherIfNeeded(order.asset);
 
             // TODO: delay matching until all orders are placed?

@@ -45,7 +45,7 @@ public:
                 .market(SELL, 1)
                 .withAsset(asset)
                 .withTraderId(traderId)
-                .withOrdId(-1)
+                .withIncrementedOrderId()
                 .build();
             return actionBuilder.withOrder(o).build();
         }
@@ -67,7 +67,7 @@ public:
                 .limit(BUY, 100, 1)
                 .withAsset(asset)
                 .withTraderId(traderId)
-                .withOrdId(-1)
+                .withIncrementedOrderId()
                 .build();
             return actionBuilder.withOrder(o).build();
         }
@@ -123,7 +123,7 @@ public:
                 .limit(SELL, 100, 1)
                 .withAsset("FOOD")
                 .withTraderId(traderId)
-                .withOrdId(-1)
+                .withIncrementedOrderId()
                 .build();
             return actionBuilder.withOrder(o).build();
         }
@@ -351,10 +351,10 @@ TEST_F(ABMTest, MatchRoutingToAgents) {
 }
 
 TEST_F(ABMTest, MatchRoutingToCorrectConsumerWithThreeConsumers) {
-    auto producer  = std::make_unique<MockProducerAgent>(0);
-    auto consumer1 = std::make_unique<MockConsumerAgent>(0);
-    auto consumer2 = std::make_unique<MockConsumerAgent>(0);
-    auto consumer3 = std::make_unique<MockConsumerAgent>(0);
+    auto producer  = std::make_unique<MockProducerAgent>(1);
+    auto consumer1 = std::make_unique<MockConsumerAgent>(2);
+    auto consumer2 = std::make_unique<MockConsumerAgent>(3);
+    auto consumer3 = std::make_unique<MockConsumerAgent>(4);
     MockProducerAgent* pProd = producer.get();
     MockConsumerAgent* pC1 = consumer1.get();
     MockConsumerAgent* pC2 = consumer2.get();
@@ -396,10 +396,10 @@ TEST_F(ABMTest, CancellationRouting) {
 }
 
 TEST_F(ABMTest, MultipleAssetsNoCrossTalk) {
-    auto foodProd  = std::make_unique<MockProducerAgent>(0, "FOOD");
-    auto foodCons  = std::make_unique<MockConsumerAgent>(0, "FOOD");
-    auto waterProd = std::make_unique<MockProducerAgent>(0, "WATER");
-    auto waterCons = std::make_unique<MockConsumerAgent>(0, "WATER");
+    auto foodProd  = std::make_unique<MockProducerAgent>(1, "FOOD");
+    auto foodCons  = std::make_unique<MockConsumerAgent>(2, "FOOD");
+    auto waterProd = std::make_unique<MockProducerAgent>(3, "WATER");
+    auto waterCons = std::make_unique<MockConsumerAgent>(4, "WATER");
     MockProducerAgent* pFP = foodProd.get();
     MockConsumerAgent* pFC = foodCons.get();
     MockProducerAgent* pWP = waterProd.get();
