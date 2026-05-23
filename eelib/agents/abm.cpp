@@ -98,11 +98,6 @@ void ABM::simStep() {
     runTickCallbacks();
 }
 
-std::int64_t ABM::addAgent(std::unique_ptr<Agent> agent) {
-    agents.push_back(std::move(agent));
-    return agent->traderId;
-}
-
 void ABM::removeAgents(std::vector<std::int64_t>& traderIdsToRemove) {
     std::vector<size_t> agentsToRemove;
     size_t numAgents = agents.size();

@@ -205,8 +205,8 @@ TEST_F(ABMTest, AddAgent) {
 }
 
 TEST_F(ABMTest, AddMultipleAgentsIncrementIds) {
-    std::int64_t id1 = abm.addAgent<MockAgent>();
-    std::int64_t id2 = abm.addAgent<MockAgent>();
+    std::int64_t id1 = abm.addAgent<MockAgent>().traderId;
+    std::int64_t id2 = abm.addAgent<MockAgent>().traderId;
     EXPECT_EQ(id1, 1);
     EXPECT_EQ(id2, 2);
 }

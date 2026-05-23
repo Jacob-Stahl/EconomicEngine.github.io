@@ -58,15 +58,14 @@ class ABM {
         ABM() = default;
 
         void simStep();
-        std::int64_t addAgent(std::unique_ptr<Agent> newAgent);
 
         template <std::derived_from<Agent> T, typename... Args>
             requires std::constructible_from<T, Args...>
-        std::int64_t addAgent(Args&&... args) {
+        const T& addAgent(Args&&... args) {
             auto agent = std::make_unique<T>(std::forward<Args>(args)...);
-            auto id = agent->traderId;            
+            T& ref = *agent;
             agents.push_back(std::move(agent));
-            return id;
+            return ref;
         }
 
         void removeAgents(std::vector<std::int64_t>& traderIdsToRemove);
