@@ -15,9 +15,7 @@ class Consumer : public Agent{
         std::shared_ptr<ConsumerState> state;
 
     public:
-        Consumer(
-            std::int64_t traderId_, 
-            std::shared_ptr<ConsumerState> state_);
+        Consumer(std::shared_ptr<ConsumerState> state_);
         Action policy(const Observation& observation) override;
         void orderPlaced(std::int64_t orderId, const tick now) override;
         void matchFound(const Match& match, const tick now) override;

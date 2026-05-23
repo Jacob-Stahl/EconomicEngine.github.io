@@ -14,7 +14,6 @@ class Producer : public Agent{
 
     public:
         Producer(
-            std::int64_t traderId_,
             std::shared_ptr<ProducerState> state_);
         Action policy(const Observation& observation) override;
 };

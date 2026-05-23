@@ -61,7 +61,7 @@ std::unique_ptr<Agent> ConsumerManager::factory() {
     state->hungerDelay = clampTickSample(hungerDelayDist(gen));
     state->maxPrice = clampInt32Sample(maxPriceDist(gen));
     states.push_back(state);
-    return std::make_unique<Consumer>(0, state);
+    return std::make_unique<Consumer>(state);
 }
 
 void ConsumerManager::changeNumAgents(std::uint32_t numAgents) {
@@ -109,7 +109,7 @@ std::unique_ptr<Agent> ProducerManager::factory() {
     state->asset = asset;
     state->preferedPrice = clampInt32Sample(preferedPriceDist(gen));
     states.push_back(state);
-    return std::make_unique<Producer>(0, state);
+    return std::make_unique<Producer>(state);
 }
 
 void ProducerManager::changeNumAgents(std::uint32_t numAgents) {
@@ -169,7 +169,7 @@ std::unique_ptr<Agent> ManufacturerManager::factory() {
         {}
     });
     states.push_back(state);
-    return std::make_unique<Manufacturer>(0, state);
+    return std::make_unique<Manufacturer>(state);
 }
 
 void ManufacturerManager::changeNumAgents(std::uint32_t numAgents) {
@@ -255,7 +255,7 @@ std::unique_ptr<Agent> PersonManager::factory() {
         lifeSpan
     });
     states.push_back(state);
-    return std::make_unique<Person>(0, state);
+    return std::make_unique<Person>(state);
 }
 
 void PersonManager::birthNewAgents(std::uint32_t births) {

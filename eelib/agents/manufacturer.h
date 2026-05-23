@@ -30,7 +30,7 @@ class Manufacturer : public Agent {
         std::vector<Order> sellOrders();
 
     public:
-        Manufacturer(std::int64_t traderId_, std::shared_ptr<ManufacturerState> state_);
+        Manufacturer(std::shared_ptr<ManufacturerState> state_);
         Action policy(const Observation& observation) override;
         void matchFound(const Match& match, const tick now) override;
         void orderPlaced(std::int64_t orderId, const tick now) override;

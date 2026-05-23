@@ -2,8 +2,8 @@
 #include <algorithm>
 #include <limits>
 
-Manufacturer::Manufacturer(std::int64_t traderId_, std::shared_ptr<ManufacturerState> state_)
-    : Agent(traderId_), state(std::move(state_))
+Manufacturer::Manufacturer(std::shared_ptr<ManufacturerState> state_)
+    : Agent(), state(std::move(state_))
 {}
 
 std::int64_t Manufacturer::costOfProd(

@@ -1,7 +1,7 @@
 #include "producer.h"
 
-Producer::Producer(std::int64_t traderId_, std::shared_ptr<ProducerState> state_)
-    : Agent(traderId_), state(std::move(state_))
+Producer::Producer(std::shared_ptr<ProducerState> state_)
+    : Agent(), state(std::move(state_))
 {}
 
 Action Producer::policy(const Observation& observation) {

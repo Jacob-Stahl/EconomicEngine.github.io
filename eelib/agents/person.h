@@ -27,7 +27,7 @@ class Person : public Agent {
     std::shared_ptr<PersonState> state;
 
     public:
-        Person(std::int64_t traderId_, std::shared_ptr<PersonState> state_);
+        Person(std::shared_ptr<PersonState> state_);
 
         Action policy(const Observation& observation) override;
         void orderPlaced(std::int64_t orderId, const tick now) override;

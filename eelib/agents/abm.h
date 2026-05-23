@@ -3,6 +3,8 @@
 #include <memory>
 #include <vector>
 #include <unordered_map>
+#include <type_traits>
+
 #include "../matcher.h"
 #include "agent.h"
 
@@ -57,6 +59,11 @@ class ABM {
 
         void simStep();
         std::int64_t addAgent(std::unique_ptr<Agent> newAgent);
+
+        template <std::derived_from<Agent> T, typename... Args>
+            requires std::constructible_from<T, Args...>
+        void addAgent(Args&&... args);
+
         void removeAgents(std::vector<std::int64_t>& traderIdsToRemove);
 
         TickCallback* addTickCallback(std::unique_ptr<TickCallback> callback);

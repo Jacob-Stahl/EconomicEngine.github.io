@@ -40,8 +40,8 @@ void PersonState::incrementAllDesireTicks() {
 
 // Person
 
-Person::Person(std::int64_t traderId_, std::shared_ptr<PersonState> state_)
-    : Agent(traderId_), state(std::move(state_))
+Person::Person(std::shared_ptr<PersonState> state_)
+    : Agent(), state(std::move(state_))
 {}
 
 Action Person::policy(const Observation& observation) {

@@ -29,7 +29,7 @@ static Order makeTestOrder(
 
 class MockAgent : public Agent {
 public:
-    MockAgent(std::int64_t id) : Agent(id) {}
+    MockAgent() : Agent() {}
     Action policy(const Observation&) override { return actionBuilder.build(); }
 };
 
@@ -37,7 +37,7 @@ class MockProducerAgent : public Agent {
 public:
     std::string asset;
     std::vector<Match> matches;
-    MockProducerAgent(std::int64_t id, std::string asset_ = "FOOD") : Agent(id), asset(std::move(asset_)) {}
+    MockProducerAgent(std::string asset_ = "FOOD") : Agent(), asset(std::move(asset_)) {}
 
     Action policy(const Observation& obs) override {
         if (obs.time == 0) {
@@ -59,7 +59,7 @@ class MockConsumerAgent : public Agent {
 public:
     std::string asset;
     std::vector<Match> matches;
-    MockConsumerAgent(std::int64_t id, std::string asset_ = "FOOD") : Agent(id), asset(std::move(asset_)) {}
+    MockConsumerAgent(std::string asset_ = "FOOD") : Agent(), asset(std::move(asset_)) {}
 
     Action policy(const Observation& obs) override {
         if (obs.time == 0) {
@@ -92,8 +92,8 @@ public:
     std::vector<Action> actions;
     int matchFoundCalls = 0;
 
-    TrackingConsumer(std::int64_t traderId, std::string asset, std::int32_t maxPrice, tick hungerDelay)
-        : Consumer(traderId, makeState(asset, maxPrice, hungerDelay))
+    TrackingConsumer(std::string asset, std::int32_t maxPrice, tick hungerDelay)
+        : Consumer(makeState(asset, maxPrice, hungerDelay))
     {}
 
     Action policy(const Observation& obs) override {
@@ -115,7 +115,7 @@ public:
     bool cancellationConfirmed = false;
     std::int64_t orderToCancel = -1;
 
-    CancelingAgent(std::int64_t id) : Agent(id) {}
+    CancelingAgent() : Agent() {}
 
     Action policy(const Observation& obs) override {
         if (obs.time == 0) {
@@ -156,7 +156,7 @@ public:
     std::vector<Order> nextOrders;
     std::vector<std::int64_t> nextCancellations;
 
-    TickSpyAgent(std::int64_t id) : Agent(id) {}
+    TickSpyAgent() : Agent() {}
 
     Action policy(const Observation&) override {
         return actionBuilder
@@ -201,22 +201,22 @@ public:
 // ---------------------------------------------------------------------------
 
 TEST_F(ABMTest, AddAgentReturnsCorrectId) {
-    std::int64_t id = abm.addAgent(std::make_unique<MockAgent>(0));
+    std::int64_t id = abm.addAgent(std::make_unique<MockAgent>());
     EXPECT_EQ(id, 1);
 }
 
 TEST_F(ABMTest, AddMultipleAgentsIncrementIds) {
-    std::int64_t id1 = abm.addAgent(std::make_unique<MockAgent>(0));
-    std::int64_t id2 = abm.addAgent(std::make_unique<MockAgent>(0));
+    std::int64_t id1 = abm.addAgent(std::make_unique<MockAgent>());
+    std::int64_t id2 = abm.addAgent(std::make_unique<MockAgent>());
     EXPECT_EQ(id1, 1);
     EXPECT_EQ(id2, 2);
 }
 
 TEST_F(ABMTest, RemoveAgentsBasedOnId) {
-    abm.addAgent(std::make_unique<MockAgent>(0));
-    abm.addAgent(std::make_unique<MockAgent>(0));
-    abm.addAgent(std::make_unique<MockAgent>(0));
-    abm.addAgent(std::make_unique<MockAgent>(0));
+    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent(std::make_unique<MockAgent>());
     EXPECT_EQ(abm.getNumAgents(), 4u);
 
     std::vector<std::int64_t> toRemove{3};
@@ -225,10 +225,10 @@ TEST_F(ABMTest, RemoveAgentsBasedOnId) {
 }
 
 TEST_F(ABMTest, Remove2AgentsBasedOnId) {
-    abm.addAgent(std::make_unique<MockAgent>(0));
-    abm.addAgent(std::make_unique<MockAgent>(0));
-    abm.addAgent(std::make_unique<MockAgent>(0));
-    abm.addAgent(std::make_unique<MockAgent>(0));
+    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent(std::make_unique<MockAgent>());
     EXPECT_EQ(abm.getNumAgents(), 4u);
 
     std::vector<std::int64_t> toRemove{3, 2};
@@ -237,10 +237,10 @@ TEST_F(ABMTest, Remove2AgentsBasedOnId) {
 }
 
 TEST_F(ABMTest, RemoveAgentsBasedOnId_IdNotPresent_DoesntRemove) {
-    abm.addAgent(std::make_unique<MockAgent>(0));
-    abm.addAgent(std::make_unique<MockAgent>(0));
-    abm.addAgent(std::make_unique<MockAgent>(0));
-    abm.addAgent(std::make_unique<MockAgent>(0));
+    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent(std::make_unique<MockAgent>());
     EXPECT_EQ(abm.getNumAgents(), 4u);
 
     std::vector<std::int64_t> toRemove{10};
@@ -249,10 +249,10 @@ TEST_F(ABMTest, RemoveAgentsBasedOnId_IdNotPresent_DoesntRemove) {
 }
 
 TEST_F(ABMTest, RemoveAgentsBasedOnId_TraderIdsEmpty) {
-    abm.addAgent(std::make_unique<MockAgent>(0));
-    abm.addAgent(std::make_unique<MockAgent>(0));
-    abm.addAgent(std::make_unique<MockAgent>(0));
-    abm.addAgent(std::make_unique<MockAgent>(0));
+    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent(std::make_unique<MockAgent>());
     EXPECT_EQ(abm.getNumAgents(), 4u);
 
     std::vector<std::int64_t> toRemove{};
@@ -261,19 +261,19 @@ TEST_F(ABMTest, RemoveAgentsBasedOnId_TraderIdsEmpty) {
 }
 
 TEST_F(ABMTest, AgentIdsAscendingAfterAdd) {
-    abm.addAgent(std::make_unique<MockAgent>(0));
-    abm.addAgent(std::make_unique<MockAgent>(0));
-    abm.addAgent(std::make_unique<MockAgent>(0));
+    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent(std::make_unique<MockAgent>());
 
     auto ids = abm.getAgentIds();
     EXPECT_TRUE(std::is_sorted(ids.begin(), ids.end()));
 }
 
 TEST_F(ABMTest, AgentIdsAscendingAfterRemove) {
-    abm.addAgent(std::make_unique<MockAgent>(0));
-    abm.addAgent(std::make_unique<MockAgent>(0));
-    abm.addAgent(std::make_unique<MockAgent>(0));
-    abm.addAgent(std::make_unique<MockAgent>(0));
+    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent(std::make_unique<MockAgent>());
 
     std::vector<std::int64_t> toRemove{2, 3};
     abm.removeAgents(toRemove);
@@ -302,10 +302,10 @@ TEST_F(ABMTest, TickCallbacksRunAfterEveryStep) {
 // ---------------------------------------------------------------------------
 
 TEST_F(ABMTest, ProducerConsumerOneStep) {
-    abm.addAgent(std::make_unique<MockProducerAgent>(0));
-    abm.addAgent(std::make_unique<MockConsumerAgent>(0));
-    abm.addAgent(std::make_unique<MockConsumerAgent>(0));
-    abm.addAgent(std::make_unique<MockConsumerAgent>(0));
+    abm.addAgent(std::make_unique<MockProducerAgent>());
+    abm.addAgent(std::make_unique<MockConsumerAgent>());
+    abm.addAgent(std::make_unique<MockConsumerAgent>());
+    abm.addAgent(std::make_unique<MockConsumerAgent>());
 
     abm.simStep();
 
@@ -330,8 +330,8 @@ TEST_F(ABMTest, MultipleStepsIncrementTickCounter) {
 }
 
 TEST_F(ABMTest, MatchRoutingToAgents) {
-    auto producer = std::make_unique<MockProducerAgent>(0);
-    auto consumer = std::make_unique<MockConsumerAgent>(0);
+    auto producer = std::make_unique<MockProducerAgent>();
+    auto consumer = std::make_unique<MockConsumerAgent>();
     MockProducerAgent* pProd = producer.get();
     MockConsumerAgent* pCons = consumer.get();
 
@@ -351,10 +351,10 @@ TEST_F(ABMTest, MatchRoutingToAgents) {
 }
 
 TEST_F(ABMTest, MatchRoutingToCorrectConsumerWithThreeConsumers) {
-    auto producer  = std::make_unique<MockProducerAgent>(1);
-    auto consumer1 = std::make_unique<MockConsumerAgent>(2);
-    auto consumer2 = std::make_unique<MockConsumerAgent>(3);
-    auto consumer3 = std::make_unique<MockConsumerAgent>(4);
+    auto producer  = std::make_unique<MockProducerAgent>();
+    auto consumer1 = std::make_unique<MockConsumerAgent>();
+    auto consumer2 = std::make_unique<MockConsumerAgent>();
+    auto consumer3 = std::make_unique<MockConsumerAgent>();
     MockProducerAgent* pProd = producer.get();
     MockConsumerAgent* pC1 = consumer1.get();
     MockConsumerAgent* pC2 = consumer2.get();
@@ -378,7 +378,7 @@ TEST_F(ABMTest, MatchRoutingToCorrectConsumerWithThreeConsumers) {
 }
 
 TEST_F(ABMTest, CancellationRouting) {
-    auto agent = std::make_unique<CancelingAgent>(0);
+    auto agent = std::make_unique<CancelingAgent>();
     CancelingAgent* pAgent = agent.get();
     abm.addAgent(std::move(agent));
 
@@ -396,10 +396,10 @@ TEST_F(ABMTest, CancellationRouting) {
 }
 
 TEST_F(ABMTest, MultipleAssetsNoCrossTalk) {
-    auto foodProd  = std::make_unique<MockProducerAgent>(1, "FOOD");
-    auto foodCons  = std::make_unique<MockConsumerAgent>(2, "FOOD");
-    auto waterProd = std::make_unique<MockProducerAgent>(3, "WATER");
-    auto waterCons = std::make_unique<MockConsumerAgent>(4, "WATER");
+    auto foodProd  = std::make_unique<MockProducerAgent>("FOOD");
+    auto foodCons  = std::make_unique<MockConsumerAgent>("FOOD");
+    auto waterProd = std::make_unique<MockProducerAgent>("WATER");
+    auto waterCons = std::make_unique<MockConsumerAgent>("WATER");
     MockProducerAgent* pFP = foodProd.get();
     MockConsumerAgent* pFC = foodCons.get();
     MockProducerAgent* pWP = waterProd.get();
@@ -432,7 +432,7 @@ TEST_F(ABMTest, MultipleAssetsNoCrossTalk) {
 // ---------------------------------------------------------------------------
 
 TEST_F(ABMTest, AgentReceivesCorrectTickOnEvents) {
-    auto agentPtr = std::make_unique<TickSpyAgent>(0);
+    auto agentPtr = std::make_unique<TickSpyAgent>();
     TickSpyAgent* agent = agentPtr.get();
     abm.addAgent(std::move(agentPtr));
 
@@ -463,8 +463,8 @@ TEST_F(ABMTest, AgentReceivesCorrectTickOnEvents) {
 }
 
 TEST_F(ABMTest, AgentReceivesCorrectTickOnMatch) {
-    auto producerPtr = std::make_unique<TickSpyAgent>(0);
-    auto consumerPtr = std::make_unique<TickSpyAgent>(0);
+    auto producerPtr = std::make_unique<TickSpyAgent>();
+    auto consumerPtr = std::make_unique<TickSpyAgent>();
     TickSpyAgent* producer = producerPtr.get();
     TickSpyAgent* consumer = consumerPtr.get();
 
@@ -505,7 +505,7 @@ TEST_F(ABMTest, AgentReceivesCorrectTickOnMatch) {
 }
 
 TEST_F(ABMTest, AggregateActionProcessesMultipleCancellationsAndPlacements) {
-    auto agentPtr = std::make_unique<TickSpyAgent>(0);
+    auto agentPtr = std::make_unique<TickSpyAgent>();
     TickSpyAgent* agent = agentPtr.get();
     abm.addAgent(std::move(agentPtr));
 
@@ -548,12 +548,12 @@ TEST_F(ABMTest, AggregateActionProcessesMultipleCancellationsAndPlacements) {
 // ---------------------------------------------------------------------------
 
 TEST_F(ABMTest, AssetVolumesPerTickAggregatesMatchedQuantityByAsset) {
-    auto foodBuyerOne  = std::make_unique<TickSpyAgent>(0);
-    auto foodBuyerTwo  = std::make_unique<TickSpyAgent>(0);
-    auto foodSellerOne = std::make_unique<TickSpyAgent>(0);
-    auto foodSellerTwo = std::make_unique<TickSpyAgent>(0);
-    auto waterBuyer    = std::make_unique<TickSpyAgent>(0);
-    auto waterSeller   = std::make_unique<TickSpyAgent>(0);
+    auto foodBuyerOne  = std::make_unique<TickSpyAgent>();
+    auto foodBuyerTwo  = std::make_unique<TickSpyAgent>();
+    auto foodSellerOne = std::make_unique<TickSpyAgent>();
+    auto foodSellerTwo = std::make_unique<TickSpyAgent>();
+    auto waterBuyer    = std::make_unique<TickSpyAgent>();
+    auto waterSeller   = std::make_unique<TickSpyAgent>();
 
     TickSpyAgent* fB1 = foodBuyerOne.get();
     TickSpyAgent* fB2 = foodBuyerTwo.get();
@@ -585,8 +585,8 @@ TEST_F(ABMTest, AssetVolumesPerTickAggregatesMatchedQuantityByAsset) {
 }
 
 TEST_F(ABMTest, AssetVolumesPerTickClearsOnNextTickWithoutMatches) {
-    auto seller = std::make_unique<TickSpyAgent>(0);
-    auto buyer  = std::make_unique<TickSpyAgent>(0);
+    auto seller = std::make_unique<TickSpyAgent>();
+    auto buyer  = std::make_unique<TickSpyAgent>();
     TickSpyAgent* pSell = seller.get();
     TickSpyAgent* pBuy  = buyer.get();
 
@@ -616,7 +616,7 @@ TEST(ProducerTest, SharedStateTracksQtyPerTick) {
     state->preferedPrice = 100;
     // qtyPerTick starts at 0; one policy call with highestBid > preferedPrice increments to 1
 
-    Producer producer(1, state);
+    Producer producer(state);
 
     Observation obs;
     Spread spread;
@@ -711,7 +711,7 @@ TEST(ProducerManagerTest, StateChangesPropagateToManagedProducersInABM) {
 
     manager.changePreferedPrice(200, 0);
     manager.changeNumAgents(1);
-    abm->addAgent(std::make_unique<MockConsumerAgent>(0));
+    abm->addAgent(std::make_unique<MockConsumerAgent>());
 
     abm->simStep();
     abm->simStep();
@@ -733,8 +733,8 @@ TEST_F(ABMTest, RealConsumerMatchFoundResetsHungerAfterFill) {
     producerState->asset = "FOOD";
     producerState->preferedPrice = 0;
 
-    auto consumer = std::make_unique<TrackingConsumer>(0, "FOOD", 20, tick(0));
-    auto producer = std::make_unique<Producer>(0, producerState);
+    auto consumer = std::make_unique<TrackingConsumer>("FOOD", 20, tick(0));
+    auto producer = std::make_unique<Producer>(producerState);
     TrackingConsumer* pConsumer = consumer.get();
 
     abm.addAgent(std::move(consumer));

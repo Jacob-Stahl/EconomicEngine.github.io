@@ -1,7 +1,7 @@
 #include "consumer.h"
 
-Consumer::Consumer(std::int64_t traderId_, std::shared_ptr<ConsumerState> state_)
-    : Agent(traderId_), state(std::move(state_))
+Consumer::Consumer(std::shared_ptr<ConsumerState> state_)
+    : Agent(), state(std::move(state_))
 {}
 
 Action Consumer::policy(const Observation& observation){

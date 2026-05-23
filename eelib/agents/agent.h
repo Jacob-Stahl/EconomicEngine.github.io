@@ -50,7 +50,7 @@ class Agent{
         ActionBuilder actionBuilder;
         OrderBuilder orderBuilder;
 
-        Agent(std::int64_t id);
+        Agent();
         virtual ~Agent() = default;
 
         virtual Action policy(const Observation& observation);
