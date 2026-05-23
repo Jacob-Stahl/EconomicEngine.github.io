@@ -55,13 +55,14 @@ void ConsumerManager::resampleAgentMaxPrice() {
     }
 }
 
-std::unique_ptr<Agent> ConsumerManager::factory() {
+std::int64_t ConsumerManager::addAgentToABM() {
     auto state = std::make_shared<ConsumerState>();
     state->asset = asset;
     state->hungerDelay = clampTickSample(hungerDelayDist(gen));
     state->maxPrice = clampInt32Sample(maxPriceDist(gen));
     states.push_back(state);
-    return std::make_unique<Consumer>(state);
+    auto agent = abm->addAgent<Consumer>(state);
+    return agent.traderId;
 }
 
 void ConsumerManager::changeNumAgents(std::uint32_t numAgents) {
@@ -104,12 +105,12 @@ void ProducerManager::resampleAgentPreferedPrice() {
     }
 }
 
-std::unique_ptr<Agent> ProducerManager::factory() {
+std::int64_t ProducerManager::addAgentToABM() {
     auto state = std::make_shared<ProducerState>();
     state->asset = asset;
     state->preferedPrice = clampInt32Sample(preferedPriceDist(gen));
     states.push_back(state);
-    return std::make_unique<Producer>(state);
+    return abm->addAgent<Producer>(state).traderId;
 }
 
 void ProducerManager::changeNumAgents(std::uint32_t numAgents) {
@@ -161,7 +162,7 @@ ManufacturerManager::~ManufacturerManager() {
     }
 }
 
-std::unique_ptr<Agent> ManufacturerManager::factory() {
+std::int64_t ManufacturerManager::addAgentToABM() {
     auto state = std::make_shared<ManufacturerState>(ManufacturerState{
         recipe,
         Inventory{},
@@ -169,7 +170,7 @@ std::unique_ptr<Agent> ManufacturerManager::factory() {
         {}
     });
     states.push_back(state);
-    return std::make_unique<Manufacturer>(state);
+    return abm->addAgent<Manufacturer>(state).traderId;
 }
 
 void ManufacturerManager::changeNumAgents(std::uint32_t numAgents) {
@@ -248,14 +249,14 @@ PersonManager::~PersonManager() {
     }
 }
 
-std::unique_ptr<Agent> PersonManager::factory() {
+std::int64_t PersonManager::addAgentToABM() {
     auto state = std::make_shared<PersonState>(PersonState{
         desires,
         spendingPower,
         lifeSpan
     });
     states.push_back(state);
-    return std::make_unique<Person>(state);
+    return abm->addAgent<Person>(state).traderId;
 }
 
 void PersonManager::birthNewAgents(std::uint32_t births) {

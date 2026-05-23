@@ -188,6 +188,11 @@ public:
 class ABMTest : public ::testing::Test {
 protected:
     ABM abm;
+
+    ABMTest(){
+        // Resets incrementing trader Ids for each test
+        // TODO something like: Agent::nextTraderId = 0;
+    }
 };
 
 class CountingTickCallback : public TickCallback {
@@ -328,57 +333,41 @@ TEST_F(ABMTest, MultipleStepsIncrementTickCounter) {
 }
 
 TEST_F(ABMTest, MatchRoutingToAgents) {
-    auto producer = std::make_unique<MockProducerAgent>();
-    auto consumer = std::make_unique<MockConsumerAgent>();
-    MockProducerAgent* pProd = producer.get();
-    MockConsumerAgent* pCons = consumer.get();
-
-    abm.addAgent(std::move(producer));
-    abm.addAgent(std::move(consumer));
+    MockProducerAgent& pProd = abm.addAgent<MockProducerAgent>();
+    MockConsumerAgent& pCons = abm.addAgent<MockConsumerAgent>();
     abm.simStep();
 
-    ASSERT_EQ(pProd->matches.size(), 1u);
-    ASSERT_EQ(pCons->matches.size(), 1u);
+    ASSERT_EQ(pProd.matches.size(), 1u);
+    ASSERT_EQ(pCons.matches.size(), 1u);
 
-    EXPECT_EQ(pProd->matches[0].qty, 1u);
-    EXPECT_EQ(pCons->matches[0].qty, 1u);
-    EXPECT_EQ(pProd->matches[0].seller.traderId, pProd->traderId);
-    EXPECT_EQ(pProd->matches[0].buyer.traderId, pCons->traderId);
-    EXPECT_EQ(pCons->matches[0].seller.traderId, pProd->traderId);
-    EXPECT_EQ(pCons->matches[0].buyer.traderId, pCons->traderId);
+    EXPECT_EQ(pProd.matches[0].qty, 1u);
+    EXPECT_EQ(pCons.matches[0].qty, 1u);
+    EXPECT_EQ(pProd.matches[0].seller.traderId, pProd.traderId);
+    EXPECT_EQ(pProd.matches[0].buyer.traderId, pCons.traderId);
+    EXPECT_EQ(pCons.matches[0].seller.traderId, pProd.traderId);
+    EXPECT_EQ(pCons.matches[0].buyer.traderId, pCons.traderId);
 }
 
 TEST_F(ABMTest, MatchRoutingToCorrectConsumerWithThreeConsumers) {
-    auto producer  = std::make_unique<MockProducerAgent>();
-    auto consumer1 = std::make_unique<MockConsumerAgent>();
-    auto consumer2 = std::make_unique<MockConsumerAgent>();
-    auto consumer3 = std::make_unique<MockConsumerAgent>();
-    MockProducerAgent* pProd = producer.get();
-    MockConsumerAgent* pC1 = consumer1.get();
-    MockConsumerAgent* pC2 = consumer2.get();
-    MockConsumerAgent* pC3 = consumer3.get();
-
-    abm.addAgent(std::move(producer));
-    abm.addAgent(std::move(consumer1));
-    abm.addAgent(std::move(consumer2));
-    abm.addAgent(std::move(consumer3));
+    MockProducerAgent& pProd = abm.addAgent<MockProducerAgent>();
+    MockConsumerAgent& pC1   = abm.addAgent<MockConsumerAgent>();
+    MockConsumerAgent& pC2   = abm.addAgent<MockConsumerAgent>();
+    MockConsumerAgent& pC3   = abm.addAgent<MockConsumerAgent>();
     abm.simStep();
 
-    ASSERT_EQ(pProd->matches.size(), 1u);
-    ASSERT_EQ(pC1->matches.size(), 1u);
-    EXPECT_TRUE(pC2->matches.empty());
-    EXPECT_TRUE(pC3->matches.empty());
+    ASSERT_EQ(pProd.matches.size(), 1u);
+    ASSERT_EQ(pC1.matches.size(), 1u);
+    EXPECT_TRUE(pC2.matches.empty());
+    EXPECT_TRUE(pC3.matches.empty());
 
-    EXPECT_EQ(pProd->matches[0].seller.traderId, pProd->traderId);
-    EXPECT_EQ(pProd->matches[0].buyer.traderId, pC1->traderId);
-    EXPECT_EQ(pC1->matches[0].seller.traderId, pProd->traderId);
-    EXPECT_EQ(pC1->matches[0].buyer.traderId, pC1->traderId);
+    EXPECT_EQ(pProd.matches[0].seller.traderId, pProd.traderId);
+    EXPECT_EQ(pProd.matches[0].buyer.traderId, pC1.traderId);
+    EXPECT_EQ(pC1.matches[0].seller.traderId, pProd.traderId);
+    EXPECT_EQ(pC1.matches[0].buyer.traderId, pC1.traderId);
 }
 
 TEST_F(ABMTest, CancellationRouting) {
-    auto agent = std::make_unique<CancelingAgent>();
-    CancelingAgent* pAgent = agent.get();
-    abm.addAgent(std::move(agent));
+    CancelingAgent& pAgent = abm.addAgent<CancelingAgent>();
 
     abm.simStep(); // tick 0->1: place order
 
@@ -388,41 +377,32 @@ TEST_F(ABMTest, CancellationRouting) {
 
     abm.simStep(); // tick 1->2: cancel order
 
-    EXPECT_TRUE(pAgent->cancellationConfirmed);
+    EXPECT_TRUE(pAgent.cancellationConfirmed);
     depth = abm.getLatestObservation().assetObservations.at("FOOD").depth;
     EXPECT_TRUE(depth.askBins.empty());
 }
 
 TEST_F(ABMTest, MultipleAssetsNoCrossTalk) {
-    auto foodProd  = std::make_unique<MockProducerAgent>("FOOD");
-    auto foodCons  = std::make_unique<MockConsumerAgent>("FOOD");
-    auto waterProd = std::make_unique<MockProducerAgent>("WATER");
-    auto waterCons = std::make_unique<MockConsumerAgent>("WATER");
-    MockProducerAgent* pFP = foodProd.get();
-    MockConsumerAgent* pFC = foodCons.get();
-    MockProducerAgent* pWP = waterProd.get();
-    MockConsumerAgent* pWC = waterCons.get();
-
-    abm.addAgent(std::move(foodProd));
-    abm.addAgent(std::move(foodCons));
-    abm.addAgent(std::move(waterProd));
-    abm.addAgent(std::move(waterCons));
+    MockProducerAgent& pFP = abm.addAgent<MockProducerAgent>("FOOD");
+    MockConsumerAgent& pFC = abm.addAgent<MockConsumerAgent>("FOOD");
+    MockProducerAgent& pWP = abm.addAgent<MockProducerAgent>("WATER");
+    MockConsumerAgent& pWC = abm.addAgent<MockConsumerAgent>("WATER");
     abm.simStep();
 
-    ASSERT_EQ(pFP->matches.size(), 1u);
-    ASSERT_EQ(pFC->matches.size(), 1u);
-    ASSERT_EQ(pWP->matches.size(), 1u);
-    ASSERT_EQ(pWC->matches.size(), 1u);
+    ASSERT_EQ(pFP.matches.size(), 1u);
+    ASSERT_EQ(pFC.matches.size(), 1u);
+    ASSERT_EQ(pWP.matches.size(), 1u);
+    ASSERT_EQ(pWC.matches.size(), 1u);
 
-    EXPECT_EQ(pFP->matches[0].buyer.asset, "FOOD");
-    EXPECT_EQ(pFP->matches[0].seller.asset, "FOOD");
-    EXPECT_EQ(pWP->matches[0].buyer.asset, "WATER");
-    EXPECT_EQ(pWP->matches[0].seller.asset, "WATER");
+    EXPECT_EQ(pFP.matches[0].buyer.asset, "FOOD");
+    EXPECT_EQ(pFP.matches[0].seller.asset, "FOOD");
+    EXPECT_EQ(pWP.matches[0].buyer.asset, "WATER");
+    EXPECT_EQ(pWP.matches[0].seller.asset, "WATER");
 
-    EXPECT_EQ(pFP->matches[0].buyer.traderId, pFC->traderId);
-    EXPECT_EQ(pFC->matches[0].seller.traderId, pFP->traderId);
-    EXPECT_EQ(pWP->matches[0].buyer.traderId, pWC->traderId);
-    EXPECT_EQ(pWC->matches[0].seller.traderId, pWP->traderId);
+    EXPECT_EQ(pFP.matches[0].buyer.traderId, pFC.traderId);
+    EXPECT_EQ(pFC.matches[0].seller.traderId, pFP.traderId);
+    EXPECT_EQ(pWP.matches[0].buyer.traderId, pWC.traderId);
+    EXPECT_EQ(pWC.matches[0].seller.traderId, pWP.traderId);
 }
 
 // ---------------------------------------------------------------------------
@@ -430,108 +410,99 @@ TEST_F(ABMTest, MultipleAssetsNoCrossTalk) {
 // ---------------------------------------------------------------------------
 
 TEST_F(ABMTest, AgentReceivesCorrectTickOnEvents) {
-    auto agentPtr = std::make_unique<TickSpyAgent>();
-    TickSpyAgent* agent = agentPtr.get();
-    abm.addAgent(std::move(agentPtr));
+    TickSpyAgent& agent = abm.addAgent<TickSpyAgent>();
 
     // Tick 0: place order
-    agent->nextOrders = {makeTestOrder("ASSET", BUY, LIMIT, 100, 1)};
+    agent.nextOrders = {makeTestOrder("ASSET", BUY, LIMIT, 100, 1)};
     abm.simStep(); // tick 0->1
 
-    EXPECT_TRUE(agent->orderPlacedCalled);
-    EXPECT_EQ(agent->lastOrderPlacedTick, tick(0));
+    EXPECT_TRUE(agent.orderPlacedCalled);
+    EXPECT_EQ(agent.lastOrderPlacedTick, tick(0));
 
     // Tick 1: cancel that order
-    agent->nextOrders = {};
-    agent->nextCancellations = {agent->placedOrderIds.back()};
-    agent->orderPlacedCalled = false;
+    agent.nextOrders = {};
+    agent.nextCancellations = {agent.placedOrderIds.back()};
+    agent.orderPlacedCalled = false;
     abm.simStep(); // tick 1->2
 
-    EXPECT_TRUE(agent->orderCanceledCalled);
-    EXPECT_EQ(agent->lastOrderCanceledTick, tick(1));
+    EXPECT_TRUE(agent.orderCanceledCalled);
+    EXPECT_EQ(agent.lastOrderCanceledTick, tick(1));
 
     // Tick 2: place another order
-    agent->orderPlacedCalled = false;
-    agent->nextOrders = {makeTestOrder("ASSET", BUY, LIMIT, 100, 1)};
-    agent->nextCancellations = {};
+    agent.orderPlacedCalled = false;
+    agent.nextOrders = {makeTestOrder("ASSET", BUY, LIMIT, 100, 1)};
+    agent.nextCancellations = {};
     abm.simStep(); // tick 2->3
 
-    EXPECT_TRUE(agent->orderPlacedCalled);
-    EXPECT_EQ(agent->lastOrderPlacedTick, tick(2));
+    EXPECT_TRUE(agent.orderPlacedCalled);
+    EXPECT_EQ(agent.lastOrderPlacedTick, tick(2));
 }
 
 TEST_F(ABMTest, AgentReceivesCorrectTickOnMatch) {
-    auto producerPtr = std::make_unique<TickSpyAgent>();
-    auto consumerPtr = std::make_unique<TickSpyAgent>();
-    TickSpyAgent* producer = producerPtr.get();
-    TickSpyAgent* consumer = consumerPtr.get();
-
-    abm.addAgent(std::move(producerPtr));
-    abm.addAgent(std::move(consumerPtr));
+    TickSpyAgent& producer = abm.addAgent<TickSpyAgent>();
+    TickSpyAgent& consumer = abm.addAgent<TickSpyAgent>();
 
     // Tick 0: producer places SELL LIMIT 100
-    producer->nextOrders = {makeTestOrder("ASSET", SELL, LIMIT, 100, 1)};
-    consumer->nextOrders = {};
-    consumer->nextCancellations = {};
+    producer.nextOrders = {makeTestOrder("ASSET", SELL, LIMIT, 100, 1)};
+    consumer.nextOrders = {};
+    consumer.nextCancellations = {};
     abm.simStep(); // tick 0->1
 
-    EXPECT_TRUE(producer->orderPlacedCalled);
-    EXPECT_EQ(producer->lastOrderPlacedTick, tick(0));
+    EXPECT_TRUE(producer.orderPlacedCalled);
+    EXPECT_EQ(producer.lastOrderPlacedTick, tick(0));
 
     // Tick 1: consumer places BUY MARKET -> match
-    producer->nextOrders = {};
-    producer->nextCancellations = {};
-    consumer->nextOrders = {makeTestOrder("ASSET", BUY, MARKET, 0, 1)};
+    producer.nextOrders = {};
+    producer.nextCancellations = {};
+    consumer.nextOrders = {makeTestOrder("ASSET", BUY, MARKET, 0, 1)};
     abm.simStep(); // tick 1->2
 
-    EXPECT_TRUE(producer->matchFoundCalled);
-    EXPECT_EQ(producer->lastMatchFoundTick, tick(1));
-    EXPECT_TRUE(consumer->matchFoundCalled);
-    EXPECT_EQ(consumer->lastMatchFoundTick, tick(1));
-    EXPECT_TRUE(consumer->orderPlacedCalled);
-    EXPECT_EQ(consumer->lastOrderPlacedTick, tick(1));
+    EXPECT_TRUE(producer.matchFoundCalled);
+    EXPECT_EQ(producer.lastMatchFoundTick, tick(1));
+    EXPECT_TRUE(consumer.matchFoundCalled);
+    EXPECT_EQ(consumer.lastMatchFoundTick, tick(1));
+    EXPECT_TRUE(consumer.orderPlacedCalled);
+    EXPECT_EQ(consumer.lastOrderPlacedTick, tick(1));
 
     // Tick 2: producer places another sell
-    producer->orderPlacedCalled = false;
-    producer->nextOrders = {makeTestOrder("ASSET", SELL, LIMIT, 100, 1)};
-    consumer->nextOrders = {};
-    consumer->nextCancellations = {};
+    producer.orderPlacedCalled = false;
+    producer.nextOrders = {makeTestOrder("ASSET", SELL, LIMIT, 100, 1)};
+    consumer.nextOrders = {};
+    consumer.nextCancellations = {};
     abm.simStep(); // tick 2->3
 
-    EXPECT_TRUE(producer->orderPlacedCalled);
-    EXPECT_EQ(producer->lastOrderPlacedTick, tick(2));
+    EXPECT_TRUE(producer.orderPlacedCalled);
+    EXPECT_EQ(producer.lastOrderPlacedTick, tick(2));
 }
 
 TEST_F(ABMTest, AggregateActionProcessesMultipleCancellationsAndPlacements) {
-    auto agentPtr = std::make_unique<TickSpyAgent>();
-    TickSpyAgent* agent = agentPtr.get();
-    abm.addAgent(std::move(agentPtr));
+    TickSpyAgent& agent = abm.addAgent<TickSpyAgent>();
 
     // Step 1: place two limit buy orders
-    agent->nextOrders = {
+    agent.nextOrders = {
         makeTestOrder("ASSET", BUY, LIMIT, 100, 1),
         makeTestOrder("ASSET", BUY, LIMIT, 101, 1)
     };
     abm.simStep();
 
-    ASSERT_EQ(agent->placedOrderIds.size(), 2u);
+    ASSERT_EQ(agent.placedOrderIds.size(), 2u);
     Depth depth = abm.getLatestObservation().assetObservations.at("ASSET").depth;
     ASSERT_EQ(depth.bidBins.size(), 2u);
     EXPECT_EQ(depth.bidBins[0].price, 101);
     EXPECT_EQ(depth.bidBins[1].price, 100);
 
     // Step 2: cancel both, place two replacement orders
-    agent->nextCancellations = {agent->placedOrderIds[0], agent->placedOrderIds[1]};
-    agent->nextOrders = {
+    agent.nextCancellations = {agent.placedOrderIds[0], agent.placedOrderIds[1]};
+    agent.nextOrders = {
         makeTestOrder("ASSET", BUY, LIMIT, 99, 1),
         makeTestOrder("ASSET", BUY, LIMIT, 98, 1)
     };
     abm.simStep();
 
-    ASSERT_EQ(agent->canceledOrderIds.size(), 2u);
-    EXPECT_EQ(agent->canceledOrderIds[0], agent->placedOrderIds[0]);
-    EXPECT_EQ(agent->canceledOrderIds[1], agent->placedOrderIds[1]);
-    ASSERT_EQ(agent->placedOrderIds.size(), 4u);
+    ASSERT_EQ(agent.canceledOrderIds.size(), 2u);
+    EXPECT_EQ(agent.canceledOrderIds[0], agent.placedOrderIds[0]);
+    EXPECT_EQ(agent.canceledOrderIds[1], agent.placedOrderIds[1]);
+    ASSERT_EQ(agent.placedOrderIds.size(), 4u);
 
     depth = abm.getLatestObservation().assetObservations.at("ASSET").depth;
     ASSERT_EQ(depth.bidBins.size(), 2u);
@@ -546,33 +517,19 @@ TEST_F(ABMTest, AggregateActionProcessesMultipleCancellationsAndPlacements) {
 // ---------------------------------------------------------------------------
 
 TEST_F(ABMTest, AssetVolumesPerTickAggregatesMatchedQuantityByAsset) {
-    auto foodBuyerOne  = std::make_unique<TickSpyAgent>();
-    auto foodBuyerTwo  = std::make_unique<TickSpyAgent>();
-    auto foodSellerOne = std::make_unique<TickSpyAgent>();
-    auto foodSellerTwo = std::make_unique<TickSpyAgent>();
-    auto waterBuyer    = std::make_unique<TickSpyAgent>();
-    auto waterSeller   = std::make_unique<TickSpyAgent>();
+    TickSpyAgent& fB1 = abm.addAgent<TickSpyAgent>();
+    TickSpyAgent& fB2 = abm.addAgent<TickSpyAgent>();
+    TickSpyAgent& fS1 = abm.addAgent<TickSpyAgent>();
+    TickSpyAgent& fS2 = abm.addAgent<TickSpyAgent>();
+    TickSpyAgent& wB  = abm.addAgent<TickSpyAgent>();
+    TickSpyAgent& wS  = abm.addAgent<TickSpyAgent>();
 
-    TickSpyAgent* fB1 = foodBuyerOne.get();
-    TickSpyAgent* fB2 = foodBuyerTwo.get();
-    TickSpyAgent* fS1 = foodSellerOne.get();
-    TickSpyAgent* fS2 = foodSellerTwo.get();
-    TickSpyAgent* wB  = waterBuyer.get();
-    TickSpyAgent* wS  = waterSeller.get();
-
-    abm.addAgent(std::move(foodBuyerOne));
-    abm.addAgent(std::move(foodBuyerTwo));
-    abm.addAgent(std::move(foodSellerOne));
-    abm.addAgent(std::move(foodSellerTwo));
-    abm.addAgent(std::move(waterBuyer));
-    abm.addAgent(std::move(waterSeller));
-
-    fB1->nextOrders = {makeTestOrder("FOOD", BUY, LIMIT, 100, 1)};
-    fB2->nextOrders = {makeTestOrder("FOOD", BUY, LIMIT, 100, 1)};
-    fS1->nextOrders = {makeTestOrder("FOOD", SELL, MARKET, 0, 1)};
-    fS2->nextOrders = {makeTestOrder("FOOD", SELL, MARKET, 0, 1)};
-    wB->nextOrders  = {makeTestOrder("WATER", BUY, LIMIT, 100, 3)};
-    wS->nextOrders  = {makeTestOrder("WATER", SELL, MARKET, 0, 3)};
+    fB1.nextOrders = {makeTestOrder("FOOD", BUY, LIMIT, 100, 1)};
+    fB2.nextOrders = {makeTestOrder("FOOD", BUY, LIMIT, 100, 1)};
+    fS1.nextOrders = {makeTestOrder("FOOD", SELL, MARKET, 0, 1)};
+    fS2.nextOrders = {makeTestOrder("FOOD", SELL, MARKET, 0, 1)};
+    wB.nextOrders  = {makeTestOrder("WATER", BUY, LIMIT, 100, 3)};
+    wS.nextOrders  = {makeTestOrder("WATER", SELL, MARKET, 0, 3)};
 
     abm.simStep();
 
@@ -583,22 +540,17 @@ TEST_F(ABMTest, AssetVolumesPerTickAggregatesMatchedQuantityByAsset) {
 }
 
 TEST_F(ABMTest, AssetVolumesPerTickClearsOnNextTickWithoutMatches) {
-    auto seller = std::make_unique<TickSpyAgent>();
-    auto buyer  = std::make_unique<TickSpyAgent>();
-    TickSpyAgent* pSell = seller.get();
-    TickSpyAgent* pBuy  = buyer.get();
+    TickSpyAgent& pSell = abm.addAgent<TickSpyAgent>();
+    TickSpyAgent& pBuy  = abm.addAgent<TickSpyAgent>();
 
-    abm.addAgent(std::move(seller));
-    abm.addAgent(std::move(buyer));
-
-    pBuy->nextOrders  = {makeTestOrder("FOOD", BUY, LIMIT, 100, 2)};
-    pSell->nextOrders = {makeTestOrder("FOOD", SELL, MARKET, 0, 2)};
+    pBuy.nextOrders  = {makeTestOrder("FOOD", BUY, LIMIT, 100, 2)};
+    pSell.nextOrders = {makeTestOrder("FOOD", SELL, MARKET, 0, 2)};
     abm.simStep();
 
     ASSERT_EQ(abm.getLatestObservation().assetObservations.at("FOOD").volumePerTick, 2u);
 
-    pSell->nextOrders = {};
-    pBuy->nextOrders  = {};
+    pSell.nextOrders = {};
+    pBuy.nextOrders  = {};
     abm.simStep();
 
     EXPECT_EQ(abm.getLatestObservation().assetObservations.at("FOOD").volumePerTick, 0u);
@@ -709,7 +661,7 @@ TEST(ProducerManagerTest, StateChangesPropagateToManagedProducersInABM) {
 
     manager.changePreferedPrice(200, 0);
     manager.changeNumAgents(1);
-    abm->addAgent(std::make_unique<MockConsumerAgent>());
+    abm->addAgent<MockConsumerAgent>();
 
     abm->simStep();
     abm->simStep();
@@ -731,23 +683,19 @@ TEST_F(ABMTest, RealConsumerMatchFoundResetsHungerAfterFill) {
     producerState->asset = "FOOD";
     producerState->preferedPrice = 0;
 
-    auto consumer = std::make_unique<TrackingConsumer>("FOOD", 20, tick(0));
-    auto producer = std::make_unique<Producer>(producerState);
-    TrackingConsumer* pConsumer = consumer.get();
-
-    abm.addAgent(std::move(consumer));
-    abm.addAgent(std::move(producer));
+    TrackingConsumer& pConsumer = abm.addAgent<TrackingConsumer>("FOOD", 20, tick(0));
+    abm.addAgent<Producer>(producerState);
 
     abm.simStep();
     abm.simStep();
     abm.simStep();
 
-    ASSERT_EQ(pConsumer->matchFoundCalls, 1);
+    ASSERT_EQ(pConsumer.matchFoundCalls, 1);
 
     abm.simStep();
 
-    ASSERT_EQ(pConsumer->actions.size(), 4u);
-    EXPECT_TRUE(pConsumer->actions[3].orderIdsToCancel.empty());
+    ASSERT_EQ(pConsumer.actions.size(), 4u);
+    EXPECT_TRUE(pConsumer.actions[3].orderIdsToCancel.empty());
 
     Depth depthAfterReset = abm.getLatestObservation().assetObservations.at("FOOD").depth;
     EXPECT_TRUE(depthAfterReset.bidBins.empty());

@@ -23,10 +23,10 @@ class AgentManager {
         {}
 
         /// @brief Produces a new agent instance.
-        virtual std::unique_ptr<Agent> factory() = 0;
+        virtual std::int64_t addAgentToABM() = 0;
 
         void create() {
-            std::int64_t traderId = abm->addAgent(factory());
+            std::int64_t traderId = addAgentToABM();
             traderIdsUnderMgmt.push_back(traderId);
         }
 
@@ -58,7 +58,7 @@ class ConsumerManager : public AgentManager {
         /// @brief Prices can be negative. Mean/std are signed.
         void changeMaxPrice(std::int32_t mean, std::int32_t std);
 
-        std::unique_ptr<Agent> factory() override;
+        std::int64_t addAgentToABM() override;
         void changeNumAgents(std::uint32_t numAgents);
 };
 
@@ -80,7 +80,7 @@ class ProducerManager : public AgentManager {
         /// @brief Prices can be negative. Mean/std are signed.
         void changePreferedPrice(std::int32_t mean, std::int32_t std);
 
-        std::unique_ptr<Agent> factory() override;
+        std::int64_t addAgentToABM() override;
         void changeNumAgents(std::uint32_t numAgents);
 };
 
@@ -108,7 +108,7 @@ class ManufacturerManager : public AgentManager {
             Recipe recipe_);
 
         ~ManufacturerManager() override;
-        std::unique_ptr<Agent> factory() override;
+        std::int64_t addAgentToABM() override;
         void changeNumAgents(std::uint32_t numAgents);
 
         /// @brief Compute the desired population for next tick based on sales activity.
@@ -139,7 +139,7 @@ class PersonManager : public AgentManager {
         PersonManager(std::shared_ptr<ABM> abm_, std::string name_);
         ~PersonManager() override;
 
-        std::unique_ptr<Agent> factory() override;
+        std::int64_t addAgentToABM() override;
         void birthNewAgents(std::uint32_t births);
 
         /// @brief Compute the number of births for this tick.

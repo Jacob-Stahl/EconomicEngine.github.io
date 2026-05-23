@@ -61,7 +61,7 @@ class ABM {
 
         template <std::derived_from<Agent> T, typename... Args>
             requires std::constructible_from<T, Args...>
-        const T& addAgent(Args&&... args) {
+        T& addAgent(Args&&... args) {
             auto agent = std::make_unique<T>(std::forward<Args>(args)...);
             T& ref = *agent;
             agents.push_back(std::move(agent));
