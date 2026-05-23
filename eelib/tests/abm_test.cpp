@@ -200,23 +200,22 @@ public:
 // ABM agent management
 // ---------------------------------------------------------------------------
 
-TEST_F(ABMTest, AddAgentReturnsCorrectId) {
-    std::int64_t id = abm.addAgent(std::make_unique<MockAgent>());
-    EXPECT_EQ(id, 1);
+TEST_F(ABMTest, AddAgent) {
+    abm.addAgent<MockAgent>();
 }
 
 TEST_F(ABMTest, AddMultipleAgentsIncrementIds) {
-    std::int64_t id1 = abm.addAgent(std::make_unique<MockAgent>());
-    std::int64_t id2 = abm.addAgent(std::make_unique<MockAgent>());
+    std::int64_t id1 = abm.addAgent<MockAgent>();
+    std::int64_t id2 = abm.addAgent<MockAgent>();
     EXPECT_EQ(id1, 1);
     EXPECT_EQ(id2, 2);
 }
 
 TEST_F(ABMTest, RemoveAgentsBasedOnId) {
-    abm.addAgent(std::make_unique<MockAgent>());
-    abm.addAgent(std::make_unique<MockAgent>());
-    abm.addAgent(std::make_unique<MockAgent>());
-    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent<MockAgent>();
+    abm.addAgent<MockAgent>();
+    abm.addAgent<MockAgent>();
+    abm.addAgent<MockAgent>();
     EXPECT_EQ(abm.getNumAgents(), 4u);
 
     std::vector<std::int64_t> toRemove{3};
@@ -225,10 +224,10 @@ TEST_F(ABMTest, RemoveAgentsBasedOnId) {
 }
 
 TEST_F(ABMTest, Remove2AgentsBasedOnId) {
-    abm.addAgent(std::make_unique<MockAgent>());
-    abm.addAgent(std::make_unique<MockAgent>());
-    abm.addAgent(std::make_unique<MockAgent>());
-    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent<MockAgent>();
+    abm.addAgent<MockAgent>();
+    abm.addAgent<MockAgent>();
+    abm.addAgent<MockAgent>();
     EXPECT_EQ(abm.getNumAgents(), 4u);
 
     std::vector<std::int64_t> toRemove{3, 2};
@@ -237,10 +236,10 @@ TEST_F(ABMTest, Remove2AgentsBasedOnId) {
 }
 
 TEST_F(ABMTest, RemoveAgentsBasedOnId_IdNotPresent_DoesntRemove) {
-    abm.addAgent(std::make_unique<MockAgent>());
-    abm.addAgent(std::make_unique<MockAgent>());
-    abm.addAgent(std::make_unique<MockAgent>());
-    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent<MockAgent>();
+    abm.addAgent<MockAgent>();
+    abm.addAgent<MockAgent>();
+    abm.addAgent<MockAgent>();
     EXPECT_EQ(abm.getNumAgents(), 4u);
 
     std::vector<std::int64_t> toRemove{10};
@@ -249,10 +248,10 @@ TEST_F(ABMTest, RemoveAgentsBasedOnId_IdNotPresent_DoesntRemove) {
 }
 
 TEST_F(ABMTest, RemoveAgentsBasedOnId_TraderIdsEmpty) {
-    abm.addAgent(std::make_unique<MockAgent>());
-    abm.addAgent(std::make_unique<MockAgent>());
-    abm.addAgent(std::make_unique<MockAgent>());
-    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent<MockAgent>();
+    abm.addAgent<MockAgent>();
+    abm.addAgent<MockAgent>();
+    abm.addAgent<MockAgent>();
     EXPECT_EQ(abm.getNumAgents(), 4u);
 
     std::vector<std::int64_t> toRemove{};
@@ -261,19 +260,18 @@ TEST_F(ABMTest, RemoveAgentsBasedOnId_TraderIdsEmpty) {
 }
 
 TEST_F(ABMTest, AgentIdsAscendingAfterAdd) {
-    abm.addAgent(std::make_unique<MockAgent>());
-    abm.addAgent(std::make_unique<MockAgent>());
-    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent<MockAgent>();
+    abm.addAgent<MockAgent>();
+    abm.addAgent<MockAgent>();
 
     auto ids = abm.getAgentIds();
     EXPECT_TRUE(std::is_sorted(ids.begin(), ids.end()));
 }
 
 TEST_F(ABMTest, AgentIdsAscendingAfterRemove) {
-    abm.addAgent(std::make_unique<MockAgent>());
-    abm.addAgent(std::make_unique<MockAgent>());
-    abm.addAgent(std::make_unique<MockAgent>());
-    abm.addAgent(std::make_unique<MockAgent>());
+    abm.addAgent<MockAgent>();
+    abm.addAgent<MockAgent>();
+    abm.addAgent<MockAgent>();
 
     std::vector<std::int64_t> toRemove{2, 3};
     abm.removeAgents(toRemove);
@@ -302,10 +300,10 @@ TEST_F(ABMTest, TickCallbacksRunAfterEveryStep) {
 // ---------------------------------------------------------------------------
 
 TEST_F(ABMTest, ProducerConsumerOneStep) {
-    abm.addAgent(std::make_unique<MockProducerAgent>());
-    abm.addAgent(std::make_unique<MockConsumerAgent>());
-    abm.addAgent(std::make_unique<MockConsumerAgent>());
-    abm.addAgent(std::make_unique<MockConsumerAgent>());
+    abm.addAgent<MockProducerAgent>();
+    abm.addAgent<MockConsumerAgent>();
+    abm.addAgent<MockConsumerAgent>();
+    abm.addAgent<MockConsumerAgent>();
 
     abm.simStep();
 

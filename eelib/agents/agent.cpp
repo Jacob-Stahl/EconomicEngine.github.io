@@ -32,7 +32,7 @@ Action ActionBuilder::build() {
 
 Agent::Agent()
 {
-    static std::int64_t nextTraderId = 1;
+    static std::int64_t nextTraderId = 0;
     nextTraderId++;
     traderId = nextTraderId;
 }

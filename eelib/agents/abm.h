@@ -62,7 +62,12 @@ class ABM {
 
         template <std::derived_from<Agent> T, typename... Args>
             requires std::constructible_from<T, Args...>
-        void addAgent(Args&&... args);
+        std::int64_t addAgent(Args&&... args) {
+            auto agent = std::make_unique<T>(std::forward<Args>(args)...);
+            auto id = agent->traderId;            
+            agents.push_back(std::move(agent));
+            return id;
+        }
 
         void removeAgents(std::vector<std::int64_t>& traderIdsToRemove);
 

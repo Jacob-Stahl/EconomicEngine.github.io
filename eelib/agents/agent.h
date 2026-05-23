@@ -46,7 +46,7 @@ class ActionBuilder{
 
 class Agent{
     public:
-        std::int64_t traderId;
+        std::int64_t traderId = -1;
         ActionBuilder actionBuilder;
         OrderBuilder orderBuilder;
 

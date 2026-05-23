@@ -103,13 +103,6 @@ std::int64_t ABM::addAgent(std::unique_ptr<Agent> agent) {
     return agent->traderId;
 }
 
-template <std::derived_from<Agent> T, typename... Args>
-    requires std::constructible_from<T, Args...>
-void ABM::addAgent(Args&&... args){
-    auto agent = std::make_unique<T>(std::forward<Args>(args)...);
-    agents.push_back(std::move(agent));
-}
-
 void ABM::removeAgents(std::vector<std::int64_t>& traderIdsToRemove) {
     std::vector<size_t> agentsToRemove;
     size_t numAgents = agents.size();
