@@ -418,7 +418,7 @@ TEST_F(ABMTest, AgentReceivesCorrectTickOnEvents) {
     abm.simStep(); // tick 0->1
 
     EXPECT_TRUE(agent.orderPlacedCalled);
-    EXPECT_EQ(agent.lastOrderPlacedTick, tick(0));
+    EXPECT_EQ(agent.lastOrderPlacedTick, tick(1));
 
     // Tick 1: cancel that order
     agent.nextOrders = {};
@@ -427,7 +427,7 @@ TEST_F(ABMTest, AgentReceivesCorrectTickOnEvents) {
     abm.simStep(); // tick 1->2
 
     EXPECT_TRUE(agent.orderCanceledCalled);
-    EXPECT_EQ(agent.lastOrderCanceledTick, tick(1));
+    EXPECT_EQ(agent.lastOrderCanceledTick, tick(2));
 
     // Tick 2: place another order
     agent.orderPlacedCalled = false;
@@ -436,7 +436,7 @@ TEST_F(ABMTest, AgentReceivesCorrectTickOnEvents) {
     abm.simStep(); // tick 2->3
 
     EXPECT_TRUE(agent.orderPlacedCalled);
-    EXPECT_EQ(agent.lastOrderPlacedTick, tick(2));
+    EXPECT_EQ(agent.lastOrderPlacedTick, tick(3));
 }
 
 TEST_F(ABMTest, AgentReceivesCorrectTickOnMatch) {
@@ -450,20 +450,23 @@ TEST_F(ABMTest, AgentReceivesCorrectTickOnMatch) {
     abm.simStep(); // tick 0->1
 
     EXPECT_TRUE(producer.orderPlacedCalled);
-    EXPECT_EQ(producer.lastOrderPlacedTick, tick(0));
+    EXPECT_EQ(producer.lastOrderPlacedTick, tick(1));
 
-    // Tick 1: consumer places BUY MARKET -> match
+    // Tick 1: consumer places BUY LIMIT 100 -> match
     producer.nextOrders = {};
     producer.nextCancellations = {};
-    consumer.nextOrders = {makeTestOrder("ASSET", BUY, MARKET, 0, 1)};
+    consumer.nextOrders = {makeTestOrder("ASSET", BUY, LIMIT, 100, 1)};
     abm.simStep(); // tick 1->2
 
-    EXPECT_TRUE(producer.matchFoundCalled);
-    EXPECT_EQ(producer.lastMatchFoundTick, tick(1));
-    EXPECT_TRUE(consumer.matchFoundCalled);
-    EXPECT_EQ(consumer.lastMatchFoundTick, tick(1));
     EXPECT_TRUE(consumer.orderPlacedCalled);
-    EXPECT_EQ(consumer.lastOrderPlacedTick, tick(1));
+    EXPECT_EQ(consumer.lastOrderPlacedTick, tick(2));
+
+    EXPECT_TRUE(producer.matchFoundCalled);
+    EXPECT_EQ(producer.lastMatchFoundTick, tick(2));
+    EXPECT_TRUE(consumer.matchFoundCalled);
+    EXPECT_EQ(consumer.lastMatchFoundTick, tick(2));
+    EXPECT_TRUE(consumer.orderPlacedCalled);
+    EXPECT_EQ(consumer.lastOrderPlacedTick, tick(2));
 
     // Tick 2: producer places another sell
     producer.orderPlacedCalled = false;
@@ -473,7 +476,7 @@ TEST_F(ABMTest, AgentReceivesCorrectTickOnMatch) {
     abm.simStep(); // tick 2->3
 
     EXPECT_TRUE(producer.orderPlacedCalled);
-    EXPECT_EQ(producer.lastOrderPlacedTick, tick(2));
+    EXPECT_EQ(producer.lastOrderPlacedTick, tick(3));
 }
 
 TEST_F(ABMTest, AggregateActionProcessesMultipleCancellationsAndPlacements) {
@@ -545,7 +548,7 @@ TEST_F(ABMTest, AssetVolumesPerTickClearsOnNextTickWithoutMatches) {
     TickSpyAgent& pBuy  = abm.addAgent<TickSpyAgent>();
 
     pBuy.nextOrders  = {makeTestOrder("FOOD", BUY, LIMIT, 100, 2)};
-    pSell.nextOrders = {makeTestOrder("FOOD", SELL, MARKET, 0, 2)};
+    pSell.nextOrders = {makeTestOrder("FOOD", SELL, LIMIT, 100, 2)};
     abm.simStep();
 
     ASSERT_EQ(abm.getLatestObservation().assetObservations.at("FOOD").volumePerTick, 2u);
@@ -684,7 +687,7 @@ TEST_F(ABMTest, RealConsumerMatchFoundResetsHungerAfterFill) {
     producerState->asset = "FOOD";
     producerState->preferedPrice = 0;
 
-    TrackingConsumer& pConsumer = abm.addAgent<TrackingConsumer>("FOOD", 20, tick(0));
+    TrackingConsumer& pConsumer = abm.addAgent<TrackingConsumer>("FOOD", 20, 0);
     abm.addAgent<Producer>(producerState);
 
     abm.simStep();

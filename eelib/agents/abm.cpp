@@ -63,6 +63,8 @@ void ABM::cancelOrderWithAllMatchers(std::int64_t doomedOrderId) {
 }
 
 void ABM::simStep() {
+
+    ++tickCounter;
     tickStats = {};
     clearAssetVolumePerTick();
 
@@ -90,10 +92,7 @@ void ABM::simStep() {
             agent->orderPlaced(order.ordId, tickCounter);
         }
     }
-
     routeMatches();
-    ++tickCounter;
-
     observe();
     runTickCallbacks();
 }
