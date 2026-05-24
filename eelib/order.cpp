@@ -116,7 +116,6 @@ OrderBuilder& OrderBuilder::withIncrementedOrderId(){
     static std::int64_t nextOrdId = 1;
 
     ordIdSet = true;
-    nextOrdId++;
-    order.ordId = nextOrdId;
+    order.ordId = nextOrdId++;
     return *this;
 }

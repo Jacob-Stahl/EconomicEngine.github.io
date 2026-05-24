@@ -63,6 +63,7 @@ class ABM {
             requires std::constructible_from<T, Args...>
         T& addAgent(Args&&... args) {
             auto agent = std::make_unique<T>(std::forward<Args>(args)...);
+            agent->traderId = nextTraderId++;
             T& ref = *agent;
             agents.push_back(std::move(agent));
             return ref;

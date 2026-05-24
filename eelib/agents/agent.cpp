@@ -29,13 +29,7 @@ Action ActionBuilder::build() {
 }
 
 // Agent
-
-Agent::Agent()
-{
-    static std::int64_t nextTraderId = 0;
-    nextTraderId++;
-    traderId = nextTraderId;
-}
+Agent::Agent(){}
 
 Action Agent::policy(const Observation& observation) {
     return actionBuilder.build();

@@ -389,6 +389,7 @@ TEST_F(ABMTest, MultipleAssetsNoCrossTalk) {
     MockConsumerAgent& pWC = abm.addAgent<MockConsumerAgent>("WATER");
     abm.simStep();
 
+    // Check Agent States
     ASSERT_EQ(pFP.matches.size(), 1u);
     ASSERT_EQ(pFC.matches.size(), 1u);
     ASSERT_EQ(pWP.matches.size(), 1u);
