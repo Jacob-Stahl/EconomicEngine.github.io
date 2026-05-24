@@ -686,9 +686,9 @@ TEST_F(ABMTest, RealConsumerMatchFoundResetsHungerAfterFill) {
     auto producerState = std::make_shared<ProducerState>();
     producerState->asset = "FOOD";
     producerState->preferedPrice = 0;
+    abm.addAgent<Producer>(producerState);
 
     TrackingConsumer& pConsumer = abm.addAgent<TrackingConsumer>("FOOD", 20, 0);
-    abm.addAgent<Producer>(producerState);
 
     abm.simStep();
     abm.simStep();
