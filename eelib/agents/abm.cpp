@@ -68,6 +68,7 @@ void ABM::simStep() {
     tickStats = {};
     clearAssetVolumePerTick();
 
+    // TODO: get all actions, then loop through actions later
     for (auto& agent : agents) {
         auto action = agent->policy(latestObservation);
 
