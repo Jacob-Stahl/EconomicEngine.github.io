@@ -75,6 +75,8 @@ void ABM::simStep() {
         // Handle cancellations
         for (auto doomedOrderId : action.orderIdsToCancel) {
             cancelOrderWithAllMatchers(doomedOrderId);
+
+            // TODO: route cancellations via notifier instead of passing them directly here
             agent->orderCanceled(doomedOrderId, tickCounter);
             ++tickStats.ordersCanceled;
         }
