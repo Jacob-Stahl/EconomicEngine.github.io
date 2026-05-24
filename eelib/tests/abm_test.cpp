@@ -42,7 +42,7 @@ public:
     Action policy(const Observation& obs) override {
         if (obs.time == 0) {
             Order o = OrderBuilder()
-                .market(SELL, 1)
+                .limit(SELL, 100, 1)
                 .withAsset(asset)
                 .withTraderId(traderId)
                 .withIncrementedOrderId()
@@ -395,10 +395,10 @@ TEST_F(ABMTest, MultipleAssetsNoCrossTalk) {
     ASSERT_EQ(pWP.matches.size(), 1u);
     ASSERT_EQ(pWC.matches.size(), 1u);
 
-    EXPECT_EQ(pFP.matches[0].buyer.asset, "FOOD");
-    EXPECT_EQ(pFP.matches[0].seller.asset, "FOOD");
-    EXPECT_EQ(pWP.matches[0].buyer.asset, "WATER");
-    EXPECT_EQ(pWP.matches[0].seller.asset, "WATER");
+    EXPECT_EQ(std::string(pFP.matches[0].buyer.asset), "FOOD");
+    EXPECT_EQ(std::string(pFC.matches[0].seller.asset), "FOOD");
+    EXPECT_EQ(std::string(pWP.matches[0].buyer.asset), "WATER");
+    EXPECT_EQ(std::string(pWC.matches[0].seller.asset), "WATER");
 
     EXPECT_EQ(pFP.matches[0].buyer.traderId, pFC.traderId);
     EXPECT_EQ(pFC.matches[0].seller.traderId, pFP.traderId);
