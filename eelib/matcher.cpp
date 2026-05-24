@@ -176,22 +176,37 @@ void Matcher::takeBuys(BookEntry& sellOrder, std::int32_t minLimitPrice){
 
 void Matcher::cancelOrder(std::int64_t ordId){
     Order doomedOrder;
+    bool wasCancelled = false;
     bool orderOnBook = notifier->getOrder(ordId, doomedOrder);
     if(!orderOnBook){
         return;
     }
 
+    // Cancel Limits
     std::uint32_t remainingQty = 0;
     if(doomedOrder.side == BUY){
         auto& bin = buyLimitBins.at(priceToBinIdx(doomedOrder.price));
-        bin.cancel(ordId, remainingQty);
+        wasCancelled = bin.cancelLimit(ordId, remainingQty);
     }
     else{
         auto& bin = sellLimitBins.at(priceToBinIdx(doomedOrder.price));
-        bin.cancel(ordId, remainingQty);
+        wasCancelled = bin.cancelLimit(ordId, remainingQty);
     }
 
-    notifier->cancelled(ordId, remainingQty);
+    // If this is a STOP order, and it was not found in active limits, check dormant stops
+    if(!wasCancelled && doomedOrder.type == STOP || doomedOrder.type == STOPLIMIT){
+        if(doomedOrder.side == BUY){
+            auto& bin = buyLimitBins.at(priceToBinIdx(doomedOrder.stopPrice));
+            wasCancelled = bin.cancelStop(ordId);
+        }
+        else{
+            auto& bin = sellLimitBins.at(priceToBinIdx(doomedOrder.stopPrice));
+            wasCancelled = bin.cancelStop(ordId);
+        }
+        remainingQty = doomedOrder.qty;
+    }
+
+    if(wasCancelled) notifier->cancelled(ordId, remainingQty);
 }
 
 const Depth Matcher::getDepth() const {

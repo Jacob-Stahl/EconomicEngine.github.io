@@ -89,7 +89,7 @@ void benchmarkMatcher(){
     Matcher matcher;
     OrderFactory factory{"TEST"};
 
-    const int numOrders = 100'000;
+    const int numOrders = 3'100'000;
     std::vector<Order> orders;
     orders.reserve(numOrders);
 
@@ -102,26 +102,22 @@ void benchmarkMatcher(){
     size_t processed = 0;
     auto lastPrint = std::chrono::steady_clock::now();
 
-    bool addToCancelQueue = false;
-    bool reAddToCancelQueue = false;
-    std::queue<std::uint64_t> cancelQueue{};
+    bool cancelPrev = false;
 
+
+    size_t ordIdx = 0;
     for (const auto& order : orders) {
 
         // Place order
         matcher.placeOrder(order);
         ++processed;
 
-        // alternate adding orders to cancel queue
-        cancelQueue.push(order.ordId);
-        auto orderId = cancelQueue.front();
-        if(reAddToCancelQueue){
-            cancelQueue.push(orderId);
+        if(ordIdx > 100){
+            if(cancelPrev){
+                matcher.cancelOrder(orders[ordIdx - 4].ordId);
+            }
+            cancelPrev = !cancelPrev;
         }
-        else{
-            matcher.cancelOrder(orderId);
-        }
-        cancelQueue.pop();
 
         auto now = std::chrono::steady_clock::now();
         if (now - lastPrint >= std::chrono::seconds(1)) {
@@ -144,6 +140,8 @@ void benchmarkMatcher(){
             std::cout << "\n";
             lastPrint = now;
         }
+
+        ++ordIdx;
     }
 
     std::cout << "Done!\n"

@@ -48,7 +48,8 @@ class LimitsBin{
         const std::uint32_t totalQty() const {return _totalQty; };
         void make(const BookEntry& makeEntry);
         void take(BookEntry& takeEntry);
-        bool cancel(std::int64_t ordId, std::uint32_t& remainingQty);
+        bool cancelLimit(std::int64_t ordId, std::uint32_t& remainingQty);
+        bool cancelStop(std::int64_t ordId); // TODO: add test coverage for stop cancellation
 
         bool hasDormantStops() const;
         void addDormantStop(const StopEntry& dormantStop);

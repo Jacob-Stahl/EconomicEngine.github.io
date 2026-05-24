@@ -32,7 +32,7 @@ void LimitsBin::take(BookEntry& takeEntry){
     };
 }
 
-bool LimitsBin::cancel(std::int64_t ordId, std::uint32_t& remainingQty){
+bool LimitsBin::cancelLimit(std::int64_t ordId, std::uint32_t& remainingQty){
     for(auto& order : entries){
         if(order.ordId == ordId){
             order.isCancelled = true;
@@ -41,6 +41,18 @@ bool LimitsBin::cancel(std::int64_t ordId, std::uint32_t& remainingQty){
             return true;
         }
     }
+
+    return false;
+}
+
+bool LimitsBin::cancelStop(std::int64_t ordId){
+    for(auto& stop : dormantStops){
+        if(stop.entry.ordId == ordId){
+            stop.entry.isCancelled = true;
+            return true;
+        }
+    }
+    
     return false;
 }
 
@@ -54,7 +66,9 @@ void LimitsBin::addDormantStop(const StopEntry& dormantStop){
 
 void LimitsBin::moveAllStopsToActive(std::vector<StopEntry>& activeStops){
     for(auto& stop : dormantStops){
-        activeStops.push_back(std::move(stop));
+        if(!stop.entry.isCancelled){
+            activeStops.push_back(std::move(stop));
+        }
     }
     dormantStops.clear();
 }
