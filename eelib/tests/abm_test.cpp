@@ -458,9 +458,12 @@ TEST_F(ABMTest, AgentReceivesCorrectTickOnMatch) {
     consumer.nextOrders = {makeTestOrder("ASSET", BUY, LIMIT, 100, 1)};
     abm.simStep(); // tick 1->2
 
+
+    // Check orders placed
     EXPECT_TRUE(consumer.orderPlacedCalled);
     EXPECT_EQ(consumer.lastOrderPlacedTick, tick(2));
 
+    // Check matches
     EXPECT_TRUE(producer.matchFoundCalled);
     EXPECT_EQ(producer.lastMatchFoundTick, tick(2));
     EXPECT_TRUE(consumer.matchFoundCalled);
@@ -686,6 +689,7 @@ TEST_F(ABMTest, RealConsumerMatchFoundResetsHungerAfterFill) {
     auto producerState = std::make_shared<ProducerState>();
     producerState->asset = "FOOD";
     producerState->preferedPrice = 0;
+    producerState->qtyPerTick = 1;
     abm.addAgent<Producer>(producerState);
 
     TrackingConsumer& pConsumer = abm.addAgent<TrackingConsumer>("FOOD", 20, 0);
