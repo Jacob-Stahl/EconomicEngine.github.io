@@ -41,7 +41,6 @@ bool LimitsBin::cancelLimit(std::int64_t ordId, std::uint32_t& remainingQty){
             return true;
         }
     }
-
     return false;
 }
 
@@ -51,8 +50,7 @@ bool LimitsBin::cancelStop(std::int64_t ordId){
             stop.entry.isCancelled = true;
             return true;
         }
-    }
-    
+    } 
     return false;
 }
 

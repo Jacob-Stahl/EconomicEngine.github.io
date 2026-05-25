@@ -31,6 +31,7 @@ struct StopEntry{
 
 class LimitsBin{
     private:
+        //std::vector<std::int64_t> cancelledLimits;
         std::vector<StopEntry> dormantStops;
         std::deque<BookEntry> entries;
         std::uint32_t _totalQty = 0;
