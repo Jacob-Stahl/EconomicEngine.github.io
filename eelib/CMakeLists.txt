@@ -10,6 +10,7 @@ set(EELIB_SOURCES
 		matcher.cpp
 		notifier.cpp
 		limits_bin.cpp
+		circular_queue.cpp
 
 		# agents
 		agents/agent.cpp
