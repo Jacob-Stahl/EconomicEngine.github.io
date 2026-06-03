@@ -630,21 +630,27 @@ TEST(ProducerManagerTest, ChangeNumAgentsTracksABMSize) {
 }
 
 TEST(ConsumerManagerTest, StateChangesPropagateToManagedConsumersInABM) {
+    
+    // Start with 1 agent with 0 hunger delay
     auto abm = std::make_shared<ABM>();
     ConsumerManager manager(abm, "consumers", "FOOD");
-
     manager.changeHungerDelay(0, 0);
     manager.changeMaxPrice(10, 0);
     manager.changeNumAgents(1);
 
-    abm->simStep();
+    // BUY LIMIT placed
     abm->simStep();
 
+    // First order cancelled, new order placed with a higher bid
+    abm->simStep();
+
+    // We expect 1 order on the book
     Depth initialDepth = abm->getLatestObservation().assetObservations.at("FOOD").depth;
     ASSERT_EQ(initialDepth.bidBins.size(), 1u);
     EXPECT_EQ(initialDepth.bidBins[0].price, 1);
     EXPECT_EQ(initialDepth.bidBins[0].totalQty, 1u);
 
+    // Apply a long hunger delay
     manager.changeHungerDelay(100, 0);
     abm->simStep();
 

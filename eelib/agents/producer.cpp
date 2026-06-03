@@ -32,7 +32,7 @@ Action Producer::policy(const Observation& observation) {
         .market(SELL, state->qtyPerTick)
         .withAsset(state->asset)
         .withTraderId(traderId)
-        .withOrdId(-1)
+        .withIncrementedOrderId()
         .build();
 
     return actionBuilder

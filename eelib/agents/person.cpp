@@ -80,7 +80,7 @@ Action Person::policy(const Observation& observation) {
         .limit(BUY, price, 1)
         .withAsset(mostDesired->asset)
         .withTraderId(traderId)
-        .withOrdId(-1)
+        .withIncrementedOrderId()
         .build();
     actionBuilder.withOrder(buy);
 

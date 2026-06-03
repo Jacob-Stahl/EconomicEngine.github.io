@@ -76,7 +76,7 @@ std::vector<Order> Manufacturer::procurementOrders(
                 std::numeric_limits<std::uint32_t>::max())))
             .withAsset(asset)
             .withTraderId(traderId)
-            .withOrdId(-1)
+            .withIncrementedOrderId()
             .build());
     }
 

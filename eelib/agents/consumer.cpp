@@ -11,25 +11,24 @@ Action Consumer::policy(const Observation& observation){
         std::max<std::int64_t>(0l, (std::int64_t)state->sinceLastFill - (std::int64_t)state->hungerDelay), 
         state->maxPrice);
     ++state->sinceLastFill;
+    
+    if(price > 0){
+        // qty always set to 1 to avoid partial fills
+        Order order = orderBuilder
+            .limit(BUY, price, 1)
+            .withAsset(state->asset)
+            .withTraderId(traderId)
+            .withIncrementedOrderId()
+            .build();
 
-    // qty always set to 1 to avoid partial fills
-    Order order = orderBuilder
-        .limit(BUY, price, 1)
-        .withAsset(state->asset)
-        .withTraderId(traderId)
-        .withOrdId(-1)
-        .build();
+        actionBuilder.withOrder(order);
+    }
 
     if (state->orderOnBookId > 0) {
-        return actionBuilder
-            .withOrder(order)
-            .withCancellation(state->orderOnBookId)
-            .build();
-    } else {
-        return actionBuilder
-            .withOrder(order)
-            .build();
+        actionBuilder.withCancellation(state->orderOnBookId);
     }
+
+    return actionBuilder.build();
 }
 
 void Consumer::orderPlaced(std::int64_t orderId, const tick now) {
