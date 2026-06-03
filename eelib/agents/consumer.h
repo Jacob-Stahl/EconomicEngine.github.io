@@ -3,10 +3,10 @@
 
 struct ConsumerState{
     std::string asset;
-    tick sinceLastFill = tick(0);
+    tick sinceLastFill = 0;
     std::int64_t orderOnBookId = 0;
     std::int32_t maxPrice;
-    tick hungerDelay = tick(0);
+    tick hungerDelay = 0;
 };
 
 class Consumer : public Agent{

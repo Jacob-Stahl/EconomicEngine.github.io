@@ -719,7 +719,8 @@ TEST_F(ABMTest, RealConsumerMatchFoundResetsHungerAfterFill) {
     Depth depthAfterReset = abm.getLatestObservation().assetObservations.at("FOOD").depth;
     EXPECT_TRUE(depthAfterReset.bidBins.empty());
 
-    abm.simStep();
+    abm.simStep(); // Hunger is 0, no order
+    abm.simStep(); // Hunger is 1, order is placed
 
     Depth depthAfterRecovery = abm.getLatestObservation().assetObservations.at("FOOD").depth;
     ASSERT_EQ(depthAfterRecovery.bidBins.size(), 1u);

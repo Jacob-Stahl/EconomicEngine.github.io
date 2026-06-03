@@ -40,7 +40,7 @@ void Consumer::orderCanceled(std::int64_t orderId, const tick now){
 }
 
 void Consumer::matchFound(const Match& match, const tick now) {
-    state->sinceLastFill = tick{0};
+    state->sinceLastFill = 0;
     state->orderOnBookId = 0;
 }
 
