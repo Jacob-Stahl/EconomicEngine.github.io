@@ -11,7 +11,7 @@ void LimitsBin::take(BookEntry& takeEntry){
         auto& makeEntry = entries.front();
 
         // Skip and remove cancelled orders;
-        if(makeEntry.isCancelled){
+        if(findEraseCancelledLimit(makeEntry.ordId)){
             entries.pop_front();
             continue;
         }
@@ -32,25 +32,43 @@ void LimitsBin::take(BookEntry& takeEntry){
     };
 }
 
-bool LimitsBin::cancelLimit(std::int64_t ordId){
-    for(auto& order : entries){
-        if(order.ordId == ordId){
-            order.isCancelled = true;
-            _totalQty -= order.qty;
+inline bool LimitsBin::findEraseCancelledLimit(std::int64_t orderId){
+    if(numCancelledLimits == 0) return false;
+
+    for(auto& cancelledLim : cancelledLimits){
+        if(orderId == cancelledLim){
+            cancelledLim = -1;
+            --numCancelledLimits;
             return true;
         }
     }
     return false;
 }
 
-bool LimitsBin::cancelStop(std::int64_t ordId){
+void LimitsBin::cancelLimit(std::int64_t ordId){
+    if(numCancelledLimits == cancelledLimits.size()){
+        cancelledLimits.push_back(ordId);
+    }
+    else{
+        for(auto& slot : cancelledLimits){
+            if(slot == -1){
+                slot = ordId;
+            }
+        }
+    }
+
+    ++numCancelledLimits;
+    notifier->cancelled(ordId);
+    return;
+}
+
+void LimitsBin::cancelStop(std::int64_t ordId){
     for(auto& stop : dormantStops){
         if(stop.entry.ordId == ordId){
-            stop.entry.isCancelled = true;
-            return true;
+            stop.isCancelled = true;
+            notifier->cancelled(ordId);
         }
     } 
-    return false;
 }
 
 void LimitsBin::notifyMatch(std::int64_t makeId, std::int64_t takeId, std::uint32_t transferQty){
@@ -63,7 +81,7 @@ void LimitsBin::addDormantStop(const StopEntry& dormantStop){
 
 void LimitsBin::moveAllStopsToActive(std::vector<StopEntry>& activeStops){
     for(auto& stop : dormantStops){
-        if(!stop.entry.isCancelled){
+        if(!stop.isCancelled){
             activeStops.push_back(std::move(stop));
         }
     }

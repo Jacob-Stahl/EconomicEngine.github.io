@@ -176,35 +176,25 @@ void Matcher::takeBuys(BookEntry& sellOrder, std::int32_t minLimitPrice){
 
 void Matcher::cancelOrder(std::int64_t ordId){
     Order doomedOrder;
-    bool wasCancelled = false;
+    //bool wasCancelled = false;
     bool orderOnBook = notifier->getOrder(ordId, doomedOrder);
     if(!orderOnBook){
         return;
     }
 
     // Cancel Limits
-    if(doomedOrder.side == BUY){
-        auto& bin = buyLimitBins.at(priceToBinIdx(doomedOrder.price));
-        wasCancelled = bin.cancelLimit(ordId);
-    }
-    else{
-        auto& bin = sellLimitBins.at(priceToBinIdx(doomedOrder.price));
-        wasCancelled = bin.cancelLimit(ordId);
-    }
+    LimitsBin& bin = doomedOrder.side == BUY ? 
+        buyLimitBins.at(priceToBinIdx(doomedOrder.price)):
+        sellLimitBins.at(priceToBinIdx(doomedOrder.price));
+    bin.cancelLimit(ordId);
 
     // If this is a STOP order, and it was not found in active limits, check dormant stops
-    if(!wasCancelled && doomedOrder.type == STOP || doomedOrder.type == STOPLIMIT){
-        if(doomedOrder.side == BUY){
-            auto& bin = buyLimitBins.at(priceToBinIdx(doomedOrder.stopPrice));
-            wasCancelled = bin.cancelStop(ordId);
-        }
-        else{
-            auto& bin = sellLimitBins.at(priceToBinIdx(doomedOrder.stopPrice));
-            wasCancelled = bin.cancelStop(ordId);
-        }
+    if(doomedOrder.type == STOP || doomedOrder.type == STOPLIMIT){
+        LimitsBin& bin = doomedOrder.side == BUY ? 
+            buyLimitBins.at(priceToBinIdx(doomedOrder.stopPrice)):
+            sellLimitBins.at(priceToBinIdx(doomedOrder.stopPrice));
+        bin.cancelStop(ordId);
     }
-
-    if(wasCancelled) notifier->cancelled(ordId);
 }
 
 const Depth Matcher::getDepth() const {

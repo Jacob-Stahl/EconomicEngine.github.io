@@ -132,7 +132,7 @@ TEST_F(MatcherTest, PlaceBuyAndSellLimitsAndMarkets_SpreadCrossed_StateIsCorrect
     EXPECT_EQ(100, matcher.notifier->matches[1].price);
 }
 
-TEST_F(MatcherTest, CancelOrder_NotMatched_StateIsCorrect){
+TEST_F(MatcherTest, CancelLimitOrder_NotMatched_StateIsCorrect){
     matcher.placeOrder(makeLimit(1, BUY, 100, 1));
     matcher.placeOrder(makeLimit(2, SELL, 110, 1));
 
