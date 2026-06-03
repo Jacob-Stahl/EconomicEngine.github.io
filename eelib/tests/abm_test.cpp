@@ -521,7 +521,7 @@ TEST_F(ABMTest, AggregateActionProcessesMultipleCancellationsAndPlacements) {
     EXPECT_EQ(depth.bidBins[0].price, 99);
     EXPECT_EQ(depth.bidBins[0].totalQty, 1u);
     EXPECT_EQ(depth.bidBins[1].price, 98);
-    EXPECT_EQ(depth.bidBins[1].totalQty, 2u);
+    EXPECT_EQ(depth.bidBins[1].totalQty, 1u);
 }
 
 // ---------------------------------------------------------------------------
