@@ -5,23 +5,7 @@
 #include <utility>
 #include <algorithm>
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
-static Order makeTestOrder(
-    const std::string& asset,
-    Side side,
-    OrdType type,
-    std::int32_t price,
-    std::uint32_t qty)
-{
-    OrderBuilder ob;
-    switch (type) {
-        case LIMIT:  return ob.limit(side, price, qty).withAsset(asset).withTraderId(0).withOrdId(-1).build();
-        default:     return ob.market(side, qty).withAsset(asset).withTraderId(0).withOrdId(-1).build();
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Mock agents
@@ -142,6 +126,21 @@ public:
 
 // TickSpyAgent stores next orders/cancellations as plain vectors (Action's
 // constructor is private; we rebuild the Action inside policy()).
+
+static Order makeTestOrder(
+    const std::string& asset,
+    Side side,
+    OrdType type,
+    std::int32_t price,
+    std::uint32_t qty)
+{
+    OrderBuilder ob;
+    switch (type) {
+        case LIMIT:  return ob.limit(side, price, qty).withAsset(asset).withTraderId(0).withIncrementedOrderId().build();
+        default:     return ob.market(side, qty).withAsset(asset).withTraderId(0).withIncrementedOrderId().build();
+    }
+}
+
 class TickSpyAgent : public Agent {
 public:
     tick lastOrderPlacedTick = 0;
@@ -159,6 +158,12 @@ public:
     TickSpyAgent() : Agent() {}
 
     Action policy(const Observation&) override {
+
+        // Ensure order trader id is consistant with the agent
+        for(auto& order : nextOrders){
+            order.traderId = traderId;
+        }
+
         return actionBuilder
             .withOrders(nextOrders)
             .withCancellations(nextCancellations)
