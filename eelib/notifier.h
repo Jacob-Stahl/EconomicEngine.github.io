@@ -14,7 +14,7 @@ class Notifier{
         }
 
         void matchFound(std::int64_t makeId, std::int64_t takeId, std::uint32_t transferQty);
-        void cancelled(std::int64_t ordId, std::uint32_t remainingQty);
+        void cancelled(std::int64_t ordId);
         bool getOrder(std::int64_t ordId, Order& order) const;
 
         std::unordered_map<std::int64_t, Order> orderRegistery;

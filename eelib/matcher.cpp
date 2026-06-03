@@ -82,7 +82,7 @@ void Matcher::placeMarket(BookEntry& entry, Side side){
 
     // cancel what remains of this market order, if any
     if(entry.qty > 0){
-        notifier->cancelled(entry.ordId, entry.qty);
+        notifier->cancelled(entry.ordId);
     }
 }
 
@@ -183,14 +183,13 @@ void Matcher::cancelOrder(std::int64_t ordId){
     }
 
     // Cancel Limits
-    std::uint32_t remainingQty = 0;
     if(doomedOrder.side == BUY){
         auto& bin = buyLimitBins.at(priceToBinIdx(doomedOrder.price));
-        wasCancelled = bin.cancelLimit(ordId, remainingQty);
+        wasCancelled = bin.cancelLimit(ordId);
     }
     else{
         auto& bin = sellLimitBins.at(priceToBinIdx(doomedOrder.price));
-        wasCancelled = bin.cancelLimit(ordId, remainingQty);
+        wasCancelled = bin.cancelLimit(ordId);
     }
 
     // If this is a STOP order, and it was not found in active limits, check dormant stops
@@ -203,10 +202,9 @@ void Matcher::cancelOrder(std::int64_t ordId){
             auto& bin = sellLimitBins.at(priceToBinIdx(doomedOrder.stopPrice));
             wasCancelled = bin.cancelStop(ordId);
         }
-        remainingQty = doomedOrder.qty;
     }
 
-    if(wasCancelled) notifier->cancelled(ordId, remainingQty);
+    if(wasCancelled) notifier->cancelled(ordId);
 }
 
 const Depth Matcher::getDepth() const {

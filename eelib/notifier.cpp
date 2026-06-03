@@ -22,7 +22,7 @@ void Notifier::matchFound(std::int64_t makeId, std::int64_t takeId, std::uint32_
     }
 }
 
-void Notifier::cancelled(std::int64_t ordId, std::uint32_t remainingQty){
+void Notifier::cancelled(std::int64_t ordId){
     Order cancelledOrder;  
     getOrder(ordId, cancelledOrder);
     cancellations.push_back(cancelledOrder);

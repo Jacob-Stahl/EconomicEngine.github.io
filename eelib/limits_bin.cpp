@@ -32,12 +32,11 @@ void LimitsBin::take(BookEntry& takeEntry){
     };
 }
 
-bool LimitsBin::cancelLimit(std::int64_t ordId, std::uint32_t& remainingQty){
+bool LimitsBin::cancelLimit(std::int64_t ordId){
     for(auto& order : entries){
         if(order.ordId == ordId){
             order.isCancelled = true;
             _totalQty -= order.qty;
-            remainingQty = order.qty;
             return true;
         }
     }
