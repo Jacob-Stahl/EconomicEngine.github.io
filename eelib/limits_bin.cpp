@@ -3,7 +3,6 @@
 
 void LimitsBin::make(const BookEntry& makeEntry){
     entries.push_back(makeEntry);
-    //_totalQty += makeEntry.qty;
 }
 
 void LimitsBin::take(BookEntry& takeEntry){
@@ -20,13 +19,9 @@ void LimitsBin::take(BookEntry& takeEntry){
         std::uint32_t transferQty = std::min(takeEntry.qty, makeEntry.qty);
         takeEntry.qty -= transferQty;
         makeEntry.qty -= transferQty;
-        //_totalQty -= transferQty;
 
         // send match notification
         notifyMatch(makeEntry.ordId, takeEntry.ordId, transferQty);
-
-
-        // TODO: move this up?
 
         // remove order on book if its empty
         if(makeEntry.qty == 0){
