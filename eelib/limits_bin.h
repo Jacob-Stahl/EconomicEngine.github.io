@@ -34,10 +34,10 @@ class LimitsBin{
     private:
         //std::vector<std::int64_t> cancelledLimits;
         std::vector<StopEntry> dormantStops;
-        std::vector<std::uint64_t> cancelledLimits;
+        std::vector<std::uint64_t> cancelledIds;
         size_t numCancelledLimits = 0;
         std::deque<BookEntry> entries;
-        std::uint32_t _totalQty = 0;
+        //std::uint32_t _totalQty = 0;
         void notifyMatch(std::int64_t makeId, std::int64_t takeId, std::uint32_t transferQty);
         bool findEraseCancelledLimit(std::int64_t orderId);
 
@@ -50,7 +50,8 @@ class LimitsBin{
 
         LimitsBin() : notifier(nullptr) {};
         LimitsBin(Notifier* _notifier): notifier(_notifier){};
-        const std::uint32_t totalQty() const {return _totalQty; };
+        std::uint32_t totalQty();
+        inline bool isEmpty() const {return entries.size() == 0;}
         void make(const BookEntry& makeEntry);
         void take(BookEntry& takeEntry);
         void cancelLimit(std::int64_t ordId);

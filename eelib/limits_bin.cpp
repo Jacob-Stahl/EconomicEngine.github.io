@@ -3,7 +3,7 @@
 
 void LimitsBin::make(const BookEntry& makeEntry){
     entries.push_back(makeEntry);
-    _totalQty += makeEntry.qty;
+    //_totalQty += makeEntry.qty;
 }
 
 void LimitsBin::take(BookEntry& takeEntry){
@@ -20,10 +20,13 @@ void LimitsBin::take(BookEntry& takeEntry){
         std::uint32_t transferQty = std::min(takeEntry.qty, makeEntry.qty);
         takeEntry.qty -= transferQty;
         makeEntry.qty -= transferQty;
-        _totalQty -= transferQty;
+        //_totalQty -= transferQty;
 
         // send match notification
         notifyMatch(makeEntry.ordId, takeEntry.ordId, transferQty);
+
+
+        // TODO: move this up?
 
         // remove order on book if its empty
         if(makeEntry.qty == 0){
@@ -32,25 +35,38 @@ void LimitsBin::take(BookEntry& takeEntry){
     };
 }
 
-inline bool LimitsBin::findEraseCancelledLimit(std::int64_t orderId){
-    if(numCancelledLimits == 0) return false;
+std::uint32_t LimitsBin::totalQty(){
+    std::uint32_t total = 0;
+    for(auto& entry : entries){
+        if(entry.qty == 0 || findEraseCancelledLimit(entry.ordId)){
+            entries.pop_front();
+            continue;
+        }
+        total += entry.qty;
+    }
 
-    for(auto& cancelledLim : cancelledLimits){
-        if(orderId == cancelledLim){
-            cancelledLim = -1;
+    return total;
+}
+
+inline bool LimitsBin::findEraseCancelledLimit(std::int64_t ordId){
+    if(numCancelledLimits == 0) return false;
+    for(auto& cancelledId : cancelledIds){
+        if(ordId == cancelledId){
+            cancelledId = -1;
             --numCancelledLimits;
             return true;
         }
     }
+
     return false;
 }
 
 void LimitsBin::cancelLimit(std::int64_t ordId){
-    if(numCancelledLimits == cancelledLimits.size()){
-        cancelledLimits.push_back(ordId);
+    if(numCancelledLimits == cancelledIds.size()){
+        cancelledIds.push_back(ordId);
     }
     else{
-        for(auto& slot : cancelledLimits){
+        for(auto& slot : cancelledIds){
             if(slot == -1){
                 slot = ordId;
             }

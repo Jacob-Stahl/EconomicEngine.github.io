@@ -137,7 +137,7 @@ void Matcher::takeSells(BookEntry& buyOrder, std::int32_t maxLimitPrice){
         if(buyOrder.qty > 0 && price <= maxLimitPrice){
             limitsBin.take(buyOrder); // first fill the order
         }
-        if(limitsBin.totalQty() == 0){
+        if(limitsBin.isEmpty()){
             continue; // then find a non-empty bin with the best asks
         }
         spread.asksMissing = false;
@@ -162,7 +162,7 @@ void Matcher::takeBuys(BookEntry& sellOrder, std::int32_t minLimitPrice){
         if(sellOrder.qty > 0 && price >= minLimitPrice){
             limitsBin.take(sellOrder);
         }
-        if(limitsBin.totalQty() == 0){
+        if(limitsBin.isEmpty()){
             continue;
         }
         
@@ -197,22 +197,22 @@ void Matcher::cancelOrder(std::int64_t ordId){
     }
 }
 
-const Depth Matcher::getDepth() const {
+const Depth Matcher::getDepth() {
     Depth depth;
 
     // Bids: highest price first
     for (size_t binIdx = buyLimitBins.size() - 1; binIdx > 0; --binIdx) {
-        auto&& bin = buyLimitBins[binIdx];
-        if (bin.totalQty() > 0) {
-            depth.bidBins.push_back({binIdxToPrice(binIdx), bin.totalQty()});
+        auto binQty = buyLimitBins[binIdx].totalQty();
+        if (binQty > 0) {
+            depth.bidBins.push_back({binIdxToPrice(binIdx), binQty});
         }
     }
 
     // Asks: lowest price first
     for (size_t binIdx = 0; binIdx < sellLimitBins.size(); ++binIdx) {
-        auto&& bin = sellLimitBins[binIdx];
-        if (bin.totalQty() > 0) {
-            depth.askBins.push_back({binIdxToPrice(binIdx), bin.totalQty()});
+        auto binQty = sellLimitBins[binIdx].totalQty();
+        if (binQty > 0) {
+            depth.askBins.push_back({binIdxToPrice(binIdx), binQty});
         }
     }
 

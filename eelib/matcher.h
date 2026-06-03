@@ -48,7 +48,7 @@ class Matcher{
         void placeOrder(const Order& order);
         void cancelOrder(std::int64_t ordId);
         const Spread& getSpread() const {return spread; };
-        const Depth getDepth() const;
+        const Depth getDepth();
 
 
         // Keep this public or use friends?
