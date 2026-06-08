@@ -176,7 +176,6 @@ void Matcher::takeBuys(BookEntry& sellOrder, std::int32_t minLimitPrice){
 
 void Matcher::cancelOrder(std::int64_t ordId){
     Order doomedOrder;
-    //bool wasCancelled = false;
     bool orderOnBook = notifier->getOrder(ordId, doomedOrder);
     if(!orderOnBook){
         return;
