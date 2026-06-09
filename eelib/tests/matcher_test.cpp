@@ -589,3 +589,24 @@ TEST_F(MatcherTest, NegativePriceLimitOrders_SpreadCrossed_Matches) {
     EXPECT_EQ(1,   matcher.notifier->matches[0].qty);
     EXPECT_EQ(-5, matcher.notifier->matches[0].price);
 }
+
+TEST_F(MatcherTest, CancelOrder_NotOnBook_BookUnchanged){
+    // Arrange
+    matcher.placeOrder(makeLimit(1, BUY,  100, 1));
+    matcher.placeOrder(makeLimit(2, SELL, 110, 1));
+
+    // Act: cancel an ordId that was never placed
+    matcher.cancelOrder(99);
+
+    const Spread& spread = matcher.getSpread();
+
+    // Book should be unchanged
+    EXPECT_EQ(0, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+    EXPECT_EQ(2, matcher.notifier->orderRegistery.size());
+
+    EXPECT_FALSE(spread.bidsMissing);
+    EXPECT_FALSE(spread.asksMissing);
+    EXPECT_EQ(100, spread.highestBid);
+    EXPECT_EQ(110, spread.lowestAsk);
+}
