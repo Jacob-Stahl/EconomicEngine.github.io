@@ -26,5 +26,5 @@ void Notifier::cancelled(std::int64_t ordId){
     Order cancelledOrder;  
     getOrder(ordId, cancelledOrder);
     cancellations.push_back(cancelledOrder);
-    orderRegistery.erase(ordId);
+    //orderRegistery.erase(ordId);
 }

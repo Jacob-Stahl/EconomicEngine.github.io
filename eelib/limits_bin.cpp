@@ -44,31 +44,11 @@ std::uint32_t LimitsBin::totalQty(){
 }
 
 inline bool LimitsBin::findEraseCancelledLimit(std::int64_t ordId){
-    if(numCancelledLimits == 0) return false;
-    for(auto& cancelledId : cancelledIds){
-        if(ordId == cancelledId){
-            cancelledId = -1;
-            --numCancelledLimits;
-            return true;
-        }
-    }
-
-    return false;
+    return cancelledIds.erase(ordId) > 0;
 }
 
 void LimitsBin::cancelLimit(std::int64_t ordId){
-    if(numCancelledLimits == cancelledIds.size()){
-        cancelledIds.push_back(ordId);
-    }
-    else{
-        for(auto& slot : cancelledIds){
-            if(slot == -1){
-                slot = ordId;
-            }
-        }
-    }
-
-    ++numCancelledLimits;
+    cancelledIds.insert(ordId);
     notifier->cancelled(ordId);
     return;
 }
@@ -78,6 +58,7 @@ void LimitsBin::cancelStop(std::int64_t ordId){
         if(stop.entry.ordId == ordId){
             stop.isCancelled = true;
             notifier->cancelled(ordId);
+            break;
         }
     } 
 }

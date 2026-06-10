@@ -3,6 +3,7 @@
 #include "order.h"
 #include "notifier.h"
 #include <queue>
+#include <unordered_set>
 
 struct BookEntry{
     std::int64_t ordId = -1;
@@ -34,8 +35,7 @@ class LimitsBin{
     private:
         //std::vector<std::int64_t> cancelledLimits;
         std::vector<StopEntry> dormantStops;
-        std::vector<std::uint64_t> cancelledIds;
-        size_t numCancelledLimits = 0;
+        std::unordered_set<std::uint64_t> cancelledIds;
         std::deque<BookEntry> entries;
         //std::uint32_t _totalQty = 0;
         void notifyMatch(std::int64_t makeId, std::int64_t takeId, std::uint32_t transferQty);
