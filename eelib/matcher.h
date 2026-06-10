@@ -45,7 +45,7 @@ class Matcher{
         void takeBuys(Order& takeEntry, std::int32_t minPrice = std::numeric_limits<std::int32_t>::min());
 
     public:
-        void placeOrder(Order& order);
+        void placeOrder(Order order);
         void cancelOrder(std::int64_t ordId);
         const Spread& getSpread() const {return spread; };
         const Depth getDepth();
