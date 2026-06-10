@@ -28,16 +28,11 @@ struct StopEntry{
         entry(order){}
 };
 
-// TODO: Store all stops at this price, on this side. 
-//      matcher will place all stops when stop price is hit
-
 class LimitsBin{
     private:
-        //std::vector<std::int64_t> cancelledLimits;
         std::vector<StopEntry> dormantStops;
-        std::unordered_set<std::uint64_t> cancelledIds;
+        std::unordered_set<std::uint64_t> cancelledIds; // TODO: consider using pool allocator here
         std::deque<BookEntry> entries;
-        //std::uint32_t _totalQty = 0;
         void notifyMatch(std::int64_t makeId, std::int64_t takeId, std::uint32_t transferQty);
         bool findEraseCancelledLimit(std::int64_t orderId);
 
