@@ -38,14 +38,14 @@ class Matcher{
         size_t priceToBinIdx(std::int32_t price) const;
         std::int32_t binIdxToPrice(size_t binIdx) const;
         LimitsBin& getLimitsBin(std::int32_t price, std::vector<LimitsBin>& bins);
-        void placeLimit(BookEntry& entry, Side side, std::int32_t price);
-        void placeMarket(BookEntry& entry, Side side);
+        void placeLimit(Order& entry, Side side, std::int32_t price);
+        void placeMarket(Order& entry, Side side);
         void placeStop(const Order& order);
-        void takeSells(BookEntry& takeEntry, std::int32_t maxPrice = std::numeric_limits<std::int32_t>::max());
-        void takeBuys(BookEntry& takeEntry, std::int32_t minPrice = std::numeric_limits<std::int32_t>::min());
+        void takeSells(Order& takeEntry, std::int32_t maxPrice = std::numeric_limits<std::int32_t>::max());
+        void takeBuys(Order& takeEntry, std::int32_t minPrice = std::numeric_limits<std::int32_t>::min());
 
     public:
-        void placeOrder(const Order& order);
+        void placeOrder(Order& order);
         void cancelOrder(std::int64_t ordId);
         const Spread& getSpread() const {return spread; };
         const Depth getDepth();

@@ -1,20 +1,18 @@
 #include "matcher.h"
 
-void Matcher::placeOrder(const Order& order){
+void Matcher::placeOrder(Order& order){
     if(order.price < minPrice || order.price > (minPrice + (std::int32_t)priceRange)){
         throw new std::logic_error("order.price is outside of matcher price range");
     };
 
-    notifier->registerOrder(order);
+    //notifier->registerOrder(order);
 
     // Place this order
     if(order.type == LIMIT){
-        BookEntry entry{order};
-        placeLimit(entry, order.side, order.price);
+        placeLimit(order, order.side, order.price);
     }
     else if(order.type == MARKET){
-        BookEntry entry{order};
-        placeMarket(entry, order.side);
+        placeMarket(order, order.side);
     }
     else if(order.type == STOPLIMIT || order.type == STOP){
         placeStop(order);
@@ -35,17 +33,17 @@ void Matcher::placeOrder(const Order& order){
     }
 }
 
-void Matcher::placeLimit(BookEntry& entry, Side side, std::int32_t price){
+void Matcher::placeLimit(Order& limitOrd, Side side, std::int32_t price){
     if(side == BUY){
         // try to match if it crosses the spread
         if(!spread.asksMissing && spread.lowestAsk <= price){
-            takeSells(entry, price);
-            if(entry.qty == 0){ return;}
+            takeSells(limitOrd, price);
+            if(limitOrd.qty == 0){ return;}
         }
 
         // place on book
         auto& buyBin = getLimitsBin(price, buyLimitBins);
-        buyBin.make(entry);
+        buyBin.make(limitOrd);
 
         // update spread        
         if(spread.bidsMissing || price > spread.highestBid){
@@ -55,12 +53,12 @@ void Matcher::placeLimit(BookEntry& entry, Side side, std::int32_t price){
     }
     else{ // SELL
         if(!spread.bidsMissing && spread.highestBid >= price){
-            takeBuys(entry, price);
-            if(entry.qty == 0){ return;}
+            takeBuys(limitOrd, price);
+            if(limitOrd.qty == 0){ return;}
         }
 
         auto& sellBin = getLimitsBin(price, sellLimitBins);
-        sellBin.make(entry);
+        sellBin.make(limitOrd);
 
         if(spread.asksMissing || price < spread.lowestAsk){
             spread.lowestAsk = price;
@@ -70,19 +68,19 @@ void Matcher::placeLimit(BookEntry& entry, Side side, std::int32_t price){
     // TODO notify placement?
 }
 
-void Matcher::placeMarket(BookEntry& entry, Side side){
+void Matcher::placeMarket(Order& marketOrd, Side side){
     bool takeSellLimits = side == BUY && !spread.asksMissing;
     bool takeBuyLimits = side == SELL && !spread.bidsMissing;
     if(takeSellLimits){
-        takeSells(entry);
+        takeSells(marketOrd);
     }
     if(takeBuyLimits){
-        takeBuys(entry);
+        takeBuys(marketOrd);
     }
 
     // cancel what remains of this market order, if any
-    if(entry.qty > 0){
-        notifier->cancelled(entry.ordId);
+    if(marketOrd.qty > 0){
+        notifier->cancelled(marketOrd.ordId);
     }
 }
 
@@ -123,7 +121,7 @@ inline LimitsBin& Matcher::getLimitsBin(std::int32_t price, std::vector<LimitsBi
     return bins[priceIdx];
 }
 
-void Matcher::takeSells(BookEntry& buyOrder, std::int32_t maxLimitPrice){
+void Matcher::takeSells(Order& buyOrder, std::int32_t maxLimitPrice){
     size_t startIdx = priceToBinIdx(spread.lowestAsk);
 
     for(auto binIdx = startIdx; binIdx < sellLimitBins.size(); ++binIdx){
@@ -149,7 +147,7 @@ void Matcher::takeSells(BookEntry& buyOrder, std::int32_t maxLimitPrice){
     spread.asksMissing = true;
 }
 
-void Matcher::takeBuys(BookEntry& sellOrder, std::int32_t minLimitPrice){
+void Matcher::takeBuys(Order& sellOrder, std::int32_t minLimitPrice){
     size_t startIdx = priceToBinIdx(spread.highestBid);
 
     for(auto binIdx = startIdx; binIdx != 0; --binIdx){
@@ -177,10 +175,11 @@ void Matcher::takeBuys(BookEntry& sellOrder, std::int32_t minLimitPrice){
 void Matcher::cancelOrder(std::int64_t ordId){
     Order doomedOrder;
     
-    bool orderOnBook = notifier->getOrder(ordId, doomedOrder);
-    if(!orderOnBook){
-        return;
-    }
+    // We are no longer checking if the order is on the book
+    //bool orderOnBook = notifier->getOrder(ordId, doomedOrder);
+    //if(!orderOnBook){
+    //    return;
+    //}
 
     // Cancel Limits
     LimitsBin& bin = doomedOrder.side == BUY ? 
