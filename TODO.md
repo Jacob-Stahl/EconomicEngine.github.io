@@ -1,0 +1,3 @@
+- Remove Market orders from Matcher?
+- Consider using pool allocators
+- Fix Tests. Something screwy with getDepths() after recent change
