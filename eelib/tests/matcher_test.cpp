@@ -140,6 +140,9 @@ TEST_F(MatcherTest, CancelLimitOrder_NotMatched_StateIsCorrect){
     matcher.cancelOrder(2);
     matcher.cancelOrder(1);
 
+    // Expect 2 cancellations so far
+    EXPECT_EQ(2, matcher.notifier->cancellations.size());
+
     matcher.placeOrder(makeMarket(3, BUY, 1));
     matcher.placeOrder(makeMarket(4, SELL, 1));
 

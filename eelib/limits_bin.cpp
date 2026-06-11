@@ -79,3 +79,7 @@ void LimitsBin::moveAllStopsToActive(std::vector<StopEntry>& activeStops){
 bool LimitsBin::hasDormantStops() const{
     return !dormantStops.empty();
 }
+
+bool LimitsBin::isEmpty() const{
+    return entries.size() - cancelledIds.size() <= 0;
+}

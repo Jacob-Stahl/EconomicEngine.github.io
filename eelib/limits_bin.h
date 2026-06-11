@@ -37,7 +37,6 @@ class LimitsBin{
         LimitsBin() : notifier(nullptr) {};
         LimitsBin(Notifier* _notifier): notifier(_notifier){};
         std::uint32_t totalQty();
-        inline bool isEmpty() const {return entries.size() == 0;}
         void make(Order& makeEntry);
         void take(Order& takeEntry);
         void cancelLimit(std::int64_t ordId);
@@ -46,4 +45,5 @@ class LimitsBin{
         bool hasDormantStops() const;
         void addDormantStop(const StopEntry& dormantStop);
         void moveAllStopsToActive(std::vector<StopEntry>& activeStops);
+        bool isEmpty() const;
 };
