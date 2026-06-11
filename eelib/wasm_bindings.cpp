@@ -21,6 +21,11 @@ ProducerManager* create_producer_manager(ABM* abm, const std::string& name,
     return new ProducerManager(borrowed_abm(abm), name, asset);
 }
 
+ManufacturerManager* create_manufacturer_manager(ABM* abm, const std::string& name,
+    const Recipe& recipe) {
+    return new ManufacturerManager(borrowed_abm(abm), name, recipe);
+}
+
 EMSCRIPTEN_BINDINGS(eelib_module) {
     enum_<OrdType>("OrdType")
         .value("MARKET", OrdType::MARKET)
@@ -32,8 +37,6 @@ EMSCRIPTEN_BINDINGS(eelib_module) {
         .value("BUY", Side::BUY)
         .value("SELL", Side::SELL);
 
-    class_<tick>("tick");
-    
     value_object<Spread>("Spread")
         .field("bidsMissing", &Spread::bidsMissing)
         .field("asksMissing", &Spread::asksMissing)
@@ -46,11 +49,21 @@ EMSCRIPTEN_BINDINGS(eelib_module) {
 
     register_vector<std::string>("VectorString");
     register_vector<PriceBin>("VectorPriceBin");
+    register_map<std::string, std::uint32_t>("MapStringUint32");
 
     value_object<Depth>("Depth")
         .field("bidBins", &Depth::bidBins)
         .field("askBins", &Depth::askBins);
 
+
+    value_object<TickStats>("TickStats")
+        .field("ordersPlaced", &TickStats::ordersPlaced)
+        .field("ordersCanceled", &TickStats::ordersCanceled);
+
+    value_object<Recipe>("Recipe")
+        .field("inputs", &Recipe::inputs)
+        .field("outputs", &Recipe::outputs)
+        .field("cost", &Recipe::cost);
 
     value_object<AssetObservation>("AssetObservation")
         .field("spread", &AssetObservation::spread)
@@ -73,12 +86,22 @@ EMSCRIPTEN_BINDINGS(eelib_module) {
         .function("changePreferedPrice", &ProducerManager::changePreferedPrice)
         .function("changeNumAgents", &ProducerManager::changeNumAgents);
 
+    class_<ManufacturerManager>("ManufacturerManager")
+        .property("numAgentsFixed", &ManufacturerManager::numAgentsFixed)
+        .property("numAgentsScaleFactor", &ManufacturerManager::numAgentsScaleFactor)
+        .property("neutralAge", &ManufacturerManager::neutralAge)
+        .property("staleAge", &ManufacturerManager::staleAge)
+        .function("changeNumAgents", &ManufacturerManager::changeNumAgents)
+        .function("newAgentPopulation", &ManufacturerManager::newAgentPopulation);
+
     function("createConsumerManager", &create_consumer_manager, allow_raw_pointers());
     function("createProducerManager", &create_producer_manager, allow_raw_pointers());
+    function("createManufacturerManager", &create_manufacturer_manager, allow_raw_pointers());
 
     class_<ABM>("ABM")
         .constructor<>()
         .function("simStep", &ABM::simStep)
         .function("getNumAgents", &ABM::getNumAgents)
-        .function("getLatestObservation", &ABM::getLatestObservation);
+        .function("getLatestObservation", &ABM::getLatestObservation)
+        .function("getTickStats", &ABM::getTickStats);
 }

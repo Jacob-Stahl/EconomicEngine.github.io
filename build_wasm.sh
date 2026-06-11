@@ -28,11 +28,16 @@ emcc -O3 \
     eelib/agents/abm.cpp \
     eelib/agents/agent.cpp \
     eelib/agents/agent_manager.cpp \
+    eelib/agents/consumer.cpp \
+    eelib/agents/producer.cpp \
+    eelib/agents/manufacturer.cpp \
+    eelib/agents/person.cpp \
+    eelib/limits_bin.cpp \
     eelib/matcher.cpp \
     eelib/notifier.cpp \
     eelib/order.cpp \
     -I eelib \
-    -std=c++17 \
+    -std=c++26 \
     -lembind \
     -sWASM=1 \
     -sMODULARIZE=1 \
