@@ -25,9 +25,9 @@ echo "Compiling eelib to WebAssembly ES module..."
 
 emcc -O3 \
     eelib/wasm_bindings.cpp \
-    eelib/abm.cpp \
-    eelib/agent.cpp \
-    eelib/agent_manager.cpp \
+    eelib/agents/abm.cpp \
+    eelib/agents/agent.cpp \
+    eelib/agents/agent_manager.cpp \
     eelib/matcher.cpp \
     eelib/notifier.cpp \
     eelib/order.cpp \
