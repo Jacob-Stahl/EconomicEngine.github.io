@@ -1,9 +1,9 @@
 #include <emscripten/bind.h>
 #include "order.h"
 #include "matcher.h"
-#include "agent.h"
-#include "agent_manager.h"
-#include "abm.h"
+#include "agents/agent.h"
+#include "agents/agent_manager.h"
+#include "agents/abm.h"
 
 using namespace emscripten;
 
@@ -32,10 +32,8 @@ EMSCRIPTEN_BINDINGS(eelib_module) {
         .value("BUY", Side::BUY)
         .value("SELL", Side::SELL);
 
-    class_<tick>("tick")
-        .constructor<unsigned long>()
-        .function("raw", &tick::raw);
-
+    class_<tick>("tick");
+    
     value_object<Spread>("Spread")
         .field("bidsMissing", &Spread::bidsMissing)
         .field("asksMissing", &Spread::asksMissing)
