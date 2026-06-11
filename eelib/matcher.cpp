@@ -5,7 +5,9 @@ void Matcher::placeOrder(Order order){
         throw new std::logic_error("order.price is outside of matcher price range");
     };
 
-    //notifier->registerOrder(order);
+    if(order.type != MARKET){
+        orderRegistry.insert_or_assign(order.ordId, order);
+    }
 
     // Place this order
     if(order.type == LIMIT){
@@ -173,13 +175,11 @@ void Matcher::takeBuys(Order& sellOrder, std::int32_t minLimitPrice){
 }
 
 void Matcher::cancelOrder(std::int64_t ordId){
-    Order doomedOrder;
-    
-    // We are no longer checking if the order is on the book
-    //bool orderOnBook = notifier->getOrder(ordId, doomedOrder);
-    //if(!orderOnBook){
-    //    return;
-    //}
+    auto it = orderRegistry.find(ordId);
+    if(it == orderRegistry.end()){
+        return;
+    }
+    const Order& doomedOrder = it->second;
 
     // Cancel Limits
     LimitsBin& bin = doomedOrder.side == BUY ? 
@@ -187,12 +187,14 @@ void Matcher::cancelOrder(std::int64_t ordId){
         sellLimitBins.at(priceToBinIdx(doomedOrder.price));
     bin.cancelLimit(ordId);
 
+    orderRegistry.erase(it);
+
     // If this is a STOP order, and it was not found in active limits, check dormant stops
     if(doomedOrder.type == STOP || doomedOrder.type == STOPLIMIT){
-        LimitsBin& bin = doomedOrder.side == BUY ? 
+        LimitsBin& stopBin = doomedOrder.side == BUY ? 
             buyLimitBins.at(priceToBinIdx(doomedOrder.stopPrice)):
             sellLimitBins.at(priceToBinIdx(doomedOrder.stopPrice));
-        bin.cancelStop(ordId);
+        stopBin.cancelStop(ordId);
     }
 }
 

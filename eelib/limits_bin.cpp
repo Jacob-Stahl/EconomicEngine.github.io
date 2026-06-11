@@ -33,8 +33,7 @@ void LimitsBin::take(Order& takeEntry){
 std::uint32_t LimitsBin::totalQty(){
     std::uint32_t total = 0;
     for(auto& entry : entries){
-        if(entry.qty == 0 || findEraseCancelledLimit(entry.ordId)){
-            entries.pop_front();
+        if(entry.qty == 0 || cancelledIds.count(entry.ordId)){
             continue;
         }
         total += entry.qty;

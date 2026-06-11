@@ -29,6 +29,9 @@ class Matcher{
         std::vector<LimitsBin> buyLimitBins;
         std::vector<LimitsBin> sellLimitBins;
 
+        // Registry for looking up order details during cancellation
+        std::unordered_map<std::int64_t, Order> orderRegistry;
+
         // Active stop order are cleared and recursivally placed by placeOrder()
         std::vector<StopEntry> activeBuyStops;
         std::vector<StopEntry> activeSellStops;
