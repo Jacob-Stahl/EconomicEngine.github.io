@@ -135,8 +135,10 @@ void Matcher::takeSells(Order& buyOrder, std::int32_t maxLimitPrice){
         }
 
         if(buyOrder.qty > 0 && price <= maxLimitPrice){
-            limitsBin.take(buyOrder); // first fill the order
+            limitsBin.take(buyOrder, orderRegistry); // first fill the order
         }
+
+        orderRegistry.erase(buyOrder.ordId);
         if(limitsBin.isEmpty()){
             continue; // then find a non-empty bin with the best asks
         }
@@ -160,8 +162,10 @@ void Matcher::takeBuys(Order& sellOrder, std::int32_t minLimitPrice){
             limitsBin.moveAllStopsToActive(activeSellStops);
         }
         if(sellOrder.qty > 0 && price >= minLimitPrice){
-            limitsBin.take(sellOrder);
+            limitsBin.take(sellOrder, orderRegistry);
         }
+
+        orderRegistry.erase(sellOrder.ordId);
         if(limitsBin.isEmpty()){
             continue;
         }

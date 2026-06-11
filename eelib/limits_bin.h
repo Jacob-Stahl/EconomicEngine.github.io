@@ -38,7 +38,7 @@ class LimitsBin{
         LimitsBin(Notifier* _notifier): notifier(_notifier){};
         std::uint32_t totalQty();
         void make(Order& makeEntry);
-        void take(Order& takeEntry);
+        void take(Order& takeEntry, std::unordered_map<std::int64_t, Order>& orderRegistry);
         void cancelLimit(std::int64_t ordId);
         void cancelStop(std::int64_t ordId); // TODO: add test coverage for stop cancellation
 

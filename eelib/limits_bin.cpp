@@ -5,7 +5,7 @@ void LimitsBin::make(Order& makeEntry){
     entries.push_back(makeEntry);
 }
 
-void LimitsBin::take(Order& takeEntry){
+void LimitsBin::take(Order& takeEntry, std::unordered_map<std::int64_t, Order>& orderRegistry){
     while (takeEntry.qty > 0 && !entries.empty()) {
         auto& makeEntry = entries.front();
 
@@ -25,6 +25,7 @@ void LimitsBin::take(Order& takeEntry){
 
         // remove order on book if its empty
         if(makeEntry.qty == 0){
+            orderRegistry.erase(makeEntry.ordId);
             entries.pop_front();
         }
     };
