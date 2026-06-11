@@ -57,7 +57,7 @@ void LimitsBin::cancelStop(std::int64_t ordId){
     for(auto& stop : dormantStops){
         if(stop.entry.ordId == ordId){
             stop.isCancelled = true;
-            notifier->cancelled(stop.entry.ordId);
+            notifier->cancelled(ordId);
             break;
         }
     } 
