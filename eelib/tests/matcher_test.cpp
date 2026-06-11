@@ -555,6 +555,42 @@ TEST_F(MatcherTest, GetDepth_DrainedLevelIsExcluded){
     EXPECT_EQ(2,   depth.bidBins[0].totalQty);
 }
 
+TEST_F(MatcherTest, CancelledOrders_ReduceBinQty_BothSides){
+    // Place two orders at each price level on both sides
+    matcher.placeOrder(makeLimit(1, BUY,  100, 3));
+    matcher.placeOrder(makeLimit(2, BUY,  100, 2)); // same bin as #1
+    matcher.placeOrder(makeLimit(3, SELL, 110, 3));
+    matcher.placeOrder(makeLimit(4, SELL, 110, 2)); // same bin as #3
+
+    // Before cancellations: bid@100 totalQty=5, ask@110 totalQty=5
+    {
+        const Depth depth = matcher.getDepth();
+        ASSERT_EQ(1, depth.bidBins.size());
+        EXPECT_EQ(100, depth.bidBins[0].price);
+        EXPECT_EQ(5,   depth.bidBins[0].totalQty);
+
+        ASSERT_EQ(1, depth.askBins.size());
+        EXPECT_EQ(110, depth.askBins[0].price);
+        EXPECT_EQ(5,   depth.askBins[0].totalQty);
+    }
+
+    // Cancel one order from each bin
+    matcher.cancelOrder(2); // removes qty 2 from bid@100
+    matcher.cancelOrder(4); // removes qty 2 from ask@110
+
+    // After cancellations: bid@100 totalQty=3, ask@110 totalQty=3
+    {
+        const Depth depth = matcher.getDepth();
+        ASSERT_EQ(1, depth.bidBins.size());
+        EXPECT_EQ(100, depth.bidBins[0].price);
+        EXPECT_EQ(3,   depth.bidBins[0].totalQty);
+
+        ASSERT_EQ(1, depth.askBins.size());
+        EXPECT_EQ(110, depth.askBins[0].price);
+        EXPECT_EQ(3,   depth.askBins[0].totalQty);
+    }
+}
+
 TEST_F(MatcherTest, NegativePriceLimitOrders_NoMatch_StateIsCorrect) {
     // Arrange & Act
     matcher.placeOrder(makeLimit(1, BUY,  -10, 1));
