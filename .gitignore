@@ -48,4 +48,3 @@ webdemo-svelte/.vite/deps/_metadata.json
 
 # Build
 build/*
-webdemo-svelte/src/lib/generated/*
