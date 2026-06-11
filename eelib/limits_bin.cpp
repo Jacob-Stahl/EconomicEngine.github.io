@@ -1,11 +1,11 @@
 #include "limits_bin.h"
 #include <algorithm>
 
-void LimitsBin::make(const BookEntry& makeEntry){
+void LimitsBin::make(Order& makeEntry){
     entries.push_back(makeEntry);
 }
 
-void LimitsBin::take(BookEntry& takeEntry){
+void LimitsBin::take(Order& takeEntry){
     while (takeEntry.qty > 0 && !entries.empty()) {
         auto& makeEntry = entries.front();
 
@@ -21,7 +21,7 @@ void LimitsBin::take(BookEntry& takeEntry){
         makeEntry.qty -= transferQty;
 
         // send match notification
-        notifyMatch(makeEntry.ordId, takeEntry.ordId, transferQty);
+        notifier->matchFound(makeEntry, takeEntry, transferQty);
 
         // remove order on book if its empty
         if(makeEntry.qty == 0){
@@ -33,8 +33,7 @@ void LimitsBin::take(BookEntry& takeEntry){
 std::uint32_t LimitsBin::totalQty(){
     std::uint32_t total = 0;
     for(auto& entry : entries){
-        if(entry.qty == 0 || findEraseCancelledLimit(entry.ordId)){
-            entries.pop_front();
+        if(entry.qty == 0 || cancelledIds.count(entry.ordId)){
             continue;
         }
         total += entry.qty;
@@ -63,10 +62,6 @@ void LimitsBin::cancelStop(std::int64_t ordId){
     } 
 }
 
-void LimitsBin::notifyMatch(std::int64_t makeId, std::int64_t takeId, std::uint32_t transferQty){
-    notifier->matchFound(makeId, takeId, transferQty);
-}
-
 void LimitsBin::addDormantStop(const StopEntry& dormantStop){
     dormantStops.push_back(dormantStop);
 }
@@ -82,4 +77,8 @@ void LimitsBin::moveAllStopsToActive(std::vector<StopEntry>& activeStops){
 
 bool LimitsBin::hasDormantStops() const{
     return !dormantStops.empty();
+}
+
+bool LimitsBin::isEmpty() const{
+    return entries.size() - cancelledIds.size() <= 0;
 }

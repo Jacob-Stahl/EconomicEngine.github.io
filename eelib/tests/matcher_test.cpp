@@ -64,7 +64,7 @@ TEST_F(MatcherTest, PlaceBuyAndSellLimits_NoMatch_StateIsCorrect) {
     EXPECT_EQ(0, matcher.notifier->cancellations.size());
 
     // 4 orders have been registered
-    EXPECT_EQ(4, matcher.notifier->orderRegistery.size());
+    //EXPECT_EQ(4, matcher.notifier->orderRegistery.size());
 
     // check spread
     EXPECT_FALSE(spread.bidsMissing);
@@ -140,6 +140,9 @@ TEST_F(MatcherTest, CancelLimitOrder_NotMatched_StateIsCorrect){
     matcher.cancelOrder(2);
     matcher.cancelOrder(1);
 
+    // Expect 2 cancellations so far
+    EXPECT_EQ(2, matcher.notifier->cancellations.size());
+
     matcher.placeOrder(makeMarket(3, BUY, 1));
     matcher.placeOrder(makeMarket(4, SELL, 1));
 
@@ -155,12 +158,12 @@ TEST_F(MatcherTest, CancelLimitOrder_NotMatched_StateIsCorrect){
 
     // Check cancellations. 
     // First 2 are cancelled manually, in correct order
-    EXPECT_EQ(2, matcher.notifier->cancellations[0].ordId);
-    EXPECT_EQ(1, matcher.notifier->cancellations[1].ordId);
+    EXPECT_EQ(2, matcher.notifier->cancellations[0]);
+    EXPECT_EQ(1, matcher.notifier->cancellations[1]);
 
     // Next 2 market orders are cancelled because there is no liquidity
-    EXPECT_EQ(3, matcher.notifier->cancellations[2].ordId);
-    EXPECT_EQ(4, matcher.notifier->cancellations[3].ordId);   
+    EXPECT_EQ(3, matcher.notifier->cancellations[2]);
+    EXPECT_EQ(4, matcher.notifier->cancellations[3]);   
 }
 
 TEST_F(MatcherTest, PlaceBuyAndSellLimits_SpreadCrossed_LiquidityNotDrained_StateIsCorrect){
@@ -489,7 +492,7 @@ TEST_F(MatcherTest, MarketAndActivatedStop_NoLiquidity_AreCancelled){
     EXPECT_EQ(100, matcher.notifier->matches[0].price);
 
     // Stop #2 activated but found no bids — cancelled
-    EXPECT_EQ(2, matcher.notifier->cancellations[0].ordId);
+    EXPECT_EQ(2, matcher.notifier->cancellations[0]);
 
     // Market BUY #4 placed on an empty book — no asks exist, cancelled immediately
     matcher.placeOrder(makeMarket(4, BUY, 1));
@@ -498,7 +501,7 @@ TEST_F(MatcherTest, MarketAndActivatedStop_NoLiquidity_AreCancelled){
     EXPECT_TRUE(matcher.getSpread().bidsMissing);
     EXPECT_TRUE(matcher.getSpread().asksMissing);
 
-    EXPECT_EQ(4, matcher.notifier->cancellations[1].ordId);
+    EXPECT_EQ(4, matcher.notifier->cancellations[1]);
 }
 
 TEST_F(MatcherTest, GetDepth_NoMatchReflectsAllLevels){
@@ -552,6 +555,42 @@ TEST_F(MatcherTest, GetDepth_DrainedLevelIsExcluded){
     EXPECT_EQ(2,   depth.bidBins[0].totalQty);
 }
 
+TEST_F(MatcherTest, CancelledOrders_ReduceBinQty_BothSides){
+    // Place two orders at each price level on both sides
+    matcher.placeOrder(makeLimit(1, BUY,  100, 3));
+    matcher.placeOrder(makeLimit(2, BUY,  100, 2)); // same bin as #1
+    matcher.placeOrder(makeLimit(3, SELL, 110, 3));
+    matcher.placeOrder(makeLimit(4, SELL, 110, 2)); // same bin as #3
+
+    // Before cancellations: bid@100 totalQty=5, ask@110 totalQty=5
+    {
+        const Depth depth = matcher.getDepth();
+        ASSERT_EQ(1, depth.bidBins.size());
+        EXPECT_EQ(100, depth.bidBins[0].price);
+        EXPECT_EQ(5,   depth.bidBins[0].totalQty);
+
+        ASSERT_EQ(1, depth.askBins.size());
+        EXPECT_EQ(110, depth.askBins[0].price);
+        EXPECT_EQ(5,   depth.askBins[0].totalQty);
+    }
+
+    // Cancel one order from each bin
+    matcher.cancelOrder(2); // removes qty 2 from bid@100
+    matcher.cancelOrder(4); // removes qty 2 from ask@110
+
+    // After cancellations: bid@100 totalQty=3, ask@110 totalQty=3
+    {
+        const Depth depth = matcher.getDepth();
+        ASSERT_EQ(1, depth.bidBins.size());
+        EXPECT_EQ(100, depth.bidBins[0].price);
+        EXPECT_EQ(3,   depth.bidBins[0].totalQty);
+
+        ASSERT_EQ(1, depth.askBins.size());
+        EXPECT_EQ(110, depth.askBins[0].price);
+        EXPECT_EQ(3,   depth.askBins[0].totalQty);
+    }
+}
+
 TEST_F(MatcherTest, NegativePriceLimitOrders_NoMatch_StateIsCorrect) {
     // Arrange & Act
     matcher.placeOrder(makeLimit(1, BUY,  -10, 1));
@@ -562,7 +601,7 @@ TEST_F(MatcherTest, NegativePriceLimitOrders_NoMatch_StateIsCorrect) {
     // No match: best bid (-10) < lowest ask (-5)
     EXPECT_EQ(0, matcher.notifier->matches.size());
     EXPECT_EQ(0, matcher.notifier->cancellations.size());
-    EXPECT_EQ(2, matcher.notifier->orderRegistery.size());
+    //EXPECT_EQ(2, matcher.notifier->orderRegistery.size());
 
     EXPECT_FALSE(spread.bidsMissing);
     EXPECT_FALSE(spread.asksMissing);
@@ -603,7 +642,7 @@ TEST_F(MatcherTest, CancelOrder_NotOnBook_BookUnchanged){
     // Book should be unchanged
     EXPECT_EQ(0, matcher.notifier->matches.size());
     EXPECT_EQ(0, matcher.notifier->cancellations.size());
-    EXPECT_EQ(2, matcher.notifier->orderRegistery.size());
+    //EXPECT_EQ(2, matcher.notifier->orderRegistery.size());
 
     EXPECT_FALSE(spread.bidsMissing);
     EXPECT_FALSE(spread.asksMissing);

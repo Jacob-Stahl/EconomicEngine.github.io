@@ -1,0 +1,4 @@
+- Remove Market orders from Matcher?
+- Consider using pool allocators
+- Fix Tests. Something screwy with getDepths() after recent change
+- Measure jitter in benchmark. This is tricky because it requires precise time measurement that doesn't alter the results.

@@ -106,7 +106,7 @@ void benchmarkMatcher(){
 
 
     size_t ordIdx = 0;
-    for (const auto& order : orders) {
+    for (auto& order : orders) {
 
         // Place order
         matcher.placeOrder(order);
