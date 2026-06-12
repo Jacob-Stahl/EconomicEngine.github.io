@@ -30,7 +30,7 @@ struct InventoryTest : ::testing::Test {
         long matchedQty) {
         Order buy = makeOrder(buyerId, BUY, asset, orderQty, price);
         Order sell = makeOrder(sellerId, SELL, asset, orderQty, price);
-        return Match(buy, sell, matchedQty);
+        return Match(buy, sell, matchedQty, price);
     }
 };
 

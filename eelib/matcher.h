@@ -1,23 +1,17 @@
 #pragma once
 
-#include "order.h"
-#include "match.h"
 #include "notifier.h"
+#include "limits_bin.h"
 #include <vector>
 #include <set>
-#include <queue>
 #include <map>
 #include <stdexcept>
 #include <unordered_map>
-
-struct MarketBacklog{
-    unsigned long bidMarketQty = 0;
-    unsigned long askMarketQty = 0;
-};
+#include <flat_map>
 
 struct PriceBin{
-    unsigned short price = 0;
-    unsigned int totalQty = 0;
+    std::int32_t price = 0;
+    std::uint32_t  totalQty = 0;
 };
 
 struct Depth{
@@ -25,99 +19,52 @@ struct Depth{
     std::vector<PriceBin> askBins;
 };
 
-struct TypeFilled{
-    bool market = false;
-    bool limit = false;
-
-    public:
-        void both(){
-            market = true;
-            limit = true;
-        }
-};
-
-/// @brief Matches orders using FIFO algorithm
 class Matcher{
-
     private:
-        unsigned long lastOrdNum = 0;
-        MarketBacklog marketBacklog;
-        
-        // TODO: Research tree balancing and its effect on performance here
-        //Order FIFO queues for different prices
-        std::map<unsigned short, std::vector<Order>> sellLimits;
-        std::map<unsigned short, std::vector<Order>> buyLimits;
 
-        // TODO: matchOrders() would benefit a lot by 
-        // spliting this into 2 BUY and SELL marketOrders vecs
-        std::vector<Order> sellMarketOrders;
-        std::vector<Order> buyMarketOrders;
-        std::set<long> canceledOrderIds;
+        std::int32_t minPrice = -16384;
+        std::uint32_t priceRange = 32768;
 
-        bool validateOrder(const Order& order) const;
+        // Limit orders by price
+        std::vector<LimitsBin> buyLimitBins;
+        std::vector<LimitsBin> sellLimitBins;
 
-        bool isCanceled(long ordId) const;
+        // Registry for looking up order details during cancellation
+        std::unordered_map<std::int64_t, Order> orderRegistry;
 
-        void pushBackLimitOrder(const Order& order);
+        // Active stop order are cleared and recursivally placed by placeOrder()
+        std::vector<StopEntry> activeBuyStops;
+        std::vector<StopEntry> activeSellStops;
 
-        template<typename FillFn>
-        void processMarkets(std::vector<Order>& orders, Spread& spread, FillFn tryFill);
+        Spread spread;
 
-        /// @brief Try to find matches for all orders on the book
-        void matchOrders();
+        size_t priceToBinIdx(std::int32_t price) const;
+        std::int32_t binIdxToPrice(size_t binIdx) const;
+        LimitsBin& getLimitsBin(std::int32_t price, std::vector<LimitsBin>& bins);
+        void placeLimit(Order& entry, Side side, std::int32_t price);
+        void placeMarket(Order& entry, Side side);
+        void placeStop(const Order& order);
+        void takeSells(Order& takeEntry, std::int32_t maxPrice = std::numeric_limits<std::int32_t>::max());
+        void takeBuys(Order& takeEntry, std::int32_t minPrice = std::numeric_limits<std::int32_t>::min());
 
-        /// @brief Tries to fill a buy market order as much as possible. Updates fill properties in matched orders. Spread is also updated
-        /// @param order 
-        /// @param spread
-        /// @return true if filled completely
-        bool tryFillBuyMarket(Order& order, Spread& spread);
-
-        /// @brief Tries to fill a sell market order as much as possible. Updates fill properties in matched orders.  Spread is also updated
-        /// @param order 
-        /// @param spread
-        /// @return true if filled completely
-        bool tryFillSellMarket(Order& order, Spread& spread);
-
-        /// @brief Remove limit orders from book at given price
-        /// @param limitPricesToRemove 
-        /// @param side 
-        void removeLimitsByPrice(std::vector<unsigned short> limitPricesToRemove, Side side);
-
-        /// @brief Matches a market order with limits sorted from the oldest to newest
-        /// @param marketOrd 
-        /// @param limitOrds 
-        /// @return true if market order is filled
-        bool matchLimits(Order& marketOrd, const Spread& spread, 
-            std::vector<Order>& limitOrds);
-
-
-        /// @brief Matches a market order an a limit. returns the type that was completely filled
-        /// @param market 
-        /// @param limit 
-        /// @return 
-        TypeFilled matchMarketAndLimit(Order& market, Order& limit);
-
-        Matcher() = default;
     public:
-        INotifier* notifier;
+        void placeOrder(Order order);
+        void cancelOrder(std::int64_t ordId);
+        const Spread& getSpread() const {return spread; };
+        const Depth getDepth();
 
-        Matcher(INotifier* notif): notifier(notif){
-            Matcher();
-        }
 
-        /// @brief Add order to the book
-        /// @param order 
-        void addOrder(Order& order, bool thenMatch = true);
+        // Keep this public or use friends?
+        std::unique_ptr<Notifier> notifier;
 
-        void cancelOrder(long ordId);
-        void cleanupCanceledOrders();
-        
-        /// @brief Add all orders in the book to a vector provided by reference. They are NOT sorted by time.
-        /// @param orders 
-        void dumpOrdersTo(std::vector<Order>& orders) const;
-
-        const Spread getSpread() const;
-        const Depth getDepth() const;
-        const MarketBacklog& getMarketBacklog() const;
-        const std::unordered_map<OrdType, int> getOrderCounts() const;
+        Matcher(std::int32_t minPrice_ = -16384, std::uint32_t priceRange_ = 32768): 
+            minPrice(minPrice_), 
+            priceRange(priceRange_),
+            buyLimitBins(priceRange_),
+            sellLimitBins(priceRange_)
+        {
+            notifier = std::make_unique<Notifier>();
+            for(auto& b : buyLimitBins)  b.notifier = notifier.get();
+            for(auto& b : sellLimitBins) b.notifier = notifier.get();
+        };
 };

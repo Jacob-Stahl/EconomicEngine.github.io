@@ -15,7 +15,7 @@
 struct AssetObservation{
     Spread spread;
     Depth depth;
-    MarketBacklog marketBacklog;
+    //MarketBacklog marketBacklog;
     long volumePerTick = 0;
 };
 
@@ -220,7 +220,6 @@ struct Desire{
 
     tick ticksSinceLastConsumption = tick(0);
 
-    Desire() = default;
     float proportionToDeath() const;
 };
 

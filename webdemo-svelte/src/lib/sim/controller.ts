@@ -126,7 +126,7 @@ export class SimulationController {
       return;
     }
 
-    this.consumerManager.changeHungerDelay(params.hungerDelayMean, params.hungerDelayStd);
+    this.consumerManager.changeHungerDelay(BigInt(params.hungerDelayMean), BigInt(params.hungerDelayStd));
     this.consumerManager.changeMaxPrice(params.maxPrice, 0);
     this.consumerManager.changeNumAgents(params.numConsumers);
     this.producerManager.changePreferedPrice(params.producerPrice, 0);
@@ -194,9 +194,10 @@ export class SimulationController {
 
   private snapshotObservation(observation: Observation): ObservationSnapshot {
     try {
-      const time = observation.time.raw();
-      const spread = toSpreadSnapshot(observation.assetSpreads.get(this.asset));
-      const depth = toDepthSnapshot(observation.assetOrderDepths.get(this.asset));
+      const time = Number(observation.time);
+      const assetObs = observation.assetObservations.get(this.asset);
+      const spread = toSpreadSnapshot(assetObs?.spread);
+      const depth = toDepthSnapshot(assetObs?.depth);
 
       return {
         time,
@@ -204,9 +205,7 @@ export class SimulationController {
         depth,
       };
     } finally {
-      safeDelete(observation.time);
-      safeDelete(observation.assetSpreads);
-      safeDelete(observation.assetOrderDepths);
+      safeDelete(observation.assetObservations);
     }
   }
 }

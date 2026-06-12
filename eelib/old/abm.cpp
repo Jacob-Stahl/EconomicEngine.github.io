@@ -6,10 +6,10 @@
 void ABM::observe(){
     latestObservation.time = tickCounter;
     for(auto& it : orderMatchers){
-        auto& ao = latestObservation.assetObservations[it.first];
-        ao.spread = it.second.getSpread();
-        ao.depth = it.second.getDepth();
-        ao.marketBacklog = it.second.getMarketBacklog();
+        //auto& ao = latestObservation.assetObservations[it.first];
+        //ao.spread = it.second.getSpread();
+        //ao.depth = it.second.getDepth();
+        //ao.marketBacklog = it.second.getMarketBacklog();
     };
 };
 
@@ -196,11 +196,11 @@ void ABM::removeTickCallback(TickCallback* callback){
 }
 
 void ABM::updateAssetVolumePerTick(std::string asset, unsigned long change){
-    latestObservation.assetObservations[asset].volumePerTick += change;
+    //latestObservation.assetObservations[asset].volumePerTick += change;
 }
 
 void ABM::clearAssetVolumePerTick(){
-    for(auto& [asset, ao] : latestObservation.assetObservations){
-        ao.volumePerTick = 0;
-    }
+    //for(auto& [asset, ao] : latestObservation.assetObservations){
+    //    ao.volumePerTick = 0;
+    //}
 }

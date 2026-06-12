@@ -114,6 +114,25 @@ function normalizeBins(source: DepthBinSnapshot[] | null | undefined) {
   }));
 }
 
+function accumulateBins(
+  bins: Array<{ price: number; qty: number }>,
+  direction: 'ltr' | 'rtl',
+): Array<{ price: number; qty: number }> {
+  let running = 0;
+  if (direction === 'rtl') {
+    for (let i = bins.length - 1; i >= 0; i -= 1) {
+      running += bins[i].qty;
+      bins[i].qty = running;
+    }
+  } else {
+    for (let i = 0; i < bins.length; i += 1) {
+      running += bins[i].qty;
+      bins[i].qty = running;
+    }
+  }
+  return bins;
+}
+
 export function renderSpreadChart({
   canvas,
   metaElement,
@@ -253,8 +272,14 @@ export function renderDepthChart({
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
 
-  const bidBins = normalizeBins(depth?.bidBins).sort((left, right) => left.price - right.price);
-  const askBins = normalizeBins(depth?.askBins).sort((left, right) => left.price - right.price);
+  const bidBins = accumulateBins(
+    normalizeBins(depth?.bidBins).sort((left, right) => left.price - right.price),
+    'rtl',
+  );
+  const askBins = accumulateBins(
+    normalizeBins(depth?.askBins).sort((left, right) => left.price - right.price),
+    'ltr',
+  );
 
   if (bidBins.length === 0 && askBins.length === 0) {
     ctx.fillStyle = '#666';

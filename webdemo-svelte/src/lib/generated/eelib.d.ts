@@ -22,10 +22,6 @@ export interface SideValue<T extends number> {
 }
 export type Side = SideValue<1>|SideValue<2>;
 
-export interface tick extends ClassHandle {
-  raw(): number;
-}
-
 export interface VectorString extends ClassHandle, Iterable<string> {
   size(): number;
   get(_0: number): string | undefined;
@@ -42,35 +38,29 @@ export interface VectorPriceBin extends ClassHandle, Iterable<PriceBin> {
   set(_0: number, _1: PriceBin): boolean;
 }
 
+export interface MapStringUint32 extends ClassHandle {
+  keys(): VectorString;
+  size(): number;
+  get(_0: EmbindString): number | undefined;
+  set(_0: EmbindString, _1: number): void;
+}
+
 export type Depth = {
   bidBins: VectorPriceBin,
   askBins: VectorPriceBin
 };
 
-export interface MapStringSpread extends ClassHandle {
+export interface MapStringAssetObservation extends ClassHandle {
   keys(): VectorString;
   size(): number;
-  get(_0: EmbindString): Spread | undefined;
-  set(_0: EmbindString, _1: Spread): void;
+  get(_0: EmbindString): AssetObservation | undefined;
+  set(_0: EmbindString, _1: AssetObservation): void;
 }
-
-export interface MapStringDepth extends ClassHandle {
-  keys(): VectorString;
-  size(): number;
-  get(_0: EmbindString): Depth | undefined;
-  set(_0: EmbindString, _1: Depth): void;
-}
-
-export type Observation = {
-  time: tick,
-  assetSpreads: MapStringSpread,
-  assetOrderDepths: MapStringDepth
-};
 
 export interface ConsumerManager extends ClassHandle {
   changeMaxPrice(_0: number, _1: number): void;
   changeNumAgents(_0: number): void;
-  changeHungerDelay(_0: number, _1: number): void;
+  changeHungerDelay(_0: bigint, _1: bigint): void;
 }
 
 export interface ProducerManager extends ClassHandle {
@@ -78,10 +68,20 @@ export interface ProducerManager extends ClassHandle {
   changeNumAgents(_0: number): void;
 }
 
+export interface ManufacturerManager extends ClassHandle {
+  numAgentsFixed: boolean;
+  neutralAge: bigint;
+  staleAge: bigint;
+  numAgentsScaleFactor: number;
+  changeNumAgents(_0: number): void;
+  newAgentPopulation(): number;
+}
+
 export interface ABM extends ClassHandle {
-  getLatestObservation(): Observation;
   simStep(): void;
+  getTickStats(): TickStats;
   getNumAgents(): number;
+  getLatestObservation(): Observation;
 }
 
 export type Spread = {
@@ -91,36 +91,57 @@ export type Spread = {
   lowestAsk: number
 };
 
+export type Recipe = {
+  inputs: MapStringUint32,
+  outputs: MapStringUint32,
+  cost: number
+};
+
 export type PriceBin = {
   price: number,
   totalQty: number
 };
 
+export type TickStats = {
+  ordersPlaced: number,
+  ordersCanceled: number
+};
+
+export type AssetObservation = {
+  spread: Spread,
+  depth: Depth,
+  volumePerTick: bigint
+};
+
+export type Observation = {
+  time: bigint,
+  assetObservations: MapStringAssetObservation
+};
+
 interface EmbindModule {
   OrdType: {MARKET: OrdTypeValue<1>, LIMIT: OrdTypeValue<2>, STOP: OrdTypeValue<3>, STOPLIMIT: OrdTypeValue<4>};
   Side: {BUY: SideValue<1>, SELL: SideValue<2>};
-  tick: {
-    new(_0: number): tick;
-  };
   VectorString: {
     new(): VectorString;
   };
   VectorPriceBin: {
     new(): VectorPriceBin;
   };
-  MapStringSpread: {
-    new(): MapStringSpread;
+  MapStringUint32: {
+    new(): MapStringUint32;
   };
-  MapStringDepth: {
-    new(): MapStringDepth;
+  MapStringAssetObservation: {
+    new(): MapStringAssetObservation;
   };
   ConsumerManager: {};
   ProducerManager: {};
+  ManufacturerManager: {};
   ABM: {
     new(): ABM;
   };
   createConsumerManager(_0: ABM | null, _1: EmbindString, _2: EmbindString): ConsumerManager | null;
   createProducerManager(_0: ABM | null, _1: EmbindString, _2: EmbindString): ProducerManager | null;
+  createManufacturerManager(_0: ABM | null, _1: EmbindString, _2: Recipe): ManufacturerManager | null;
 }
 
 export type MainModule = WasmModule & EmbindModule;

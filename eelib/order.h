@@ -2,17 +2,12 @@
 
 #include <string>
 
-// TODO order builder
-// TODO use string view for order builder somehow
-
-const int MAX_ASSET_LENGTH = 12;
-
 struct Spread{
     bool bidsMissing = true;
     bool asksMissing = true;
 
-    unsigned short highestBid = 0;
-    unsigned short lowestAsk = 0;
+    int highestBid = 0;
+    int lowestAsk = 0;
 };
 
 /// @brief Subset of the order types found here: https://www.onixs.biz/fix-dictionary/4.4/tagNum_40.html
@@ -36,72 +31,56 @@ enum Side {
     SELL = 2,
 };
 
+enum TimeInForce{
+    /// @brief Good Til Cancelled
+    GTC,
+
+    /// @brief Immediate or Cancelled
+    IOC,
+
+    /// @brief Fill or Kill
+    FOC
+};
+
 struct Order{
-
-    /// @brief Id of the trader that placed this order
-    long traderId;
-    /// @brief Unique id of this order
-    long ordId;
-    /// @brief Buy or Sell
+    char asset[16];
+    std::int64_t traderId = -1;
+    std::int64_t ordId = -1;
     Side side;
-    /// @brief Quantity of the order.
-    unsigned int qty;
-    /// @brief Price of the order in cents.
-    unsigned short price;
-    /// @brief Stop price of the order.
-    unsigned short stopPrice;
-    /// @brief Asset
-    std::string asset;
-    /// @brief Order type (Market, Limit, Stop).
     OrdType type;
+    TimeInForce timeInForce;
+    std::int32_t price = 0;
+    std::uint32_t qty = 0;
+    std::int32_t stopPrice = 0;
 
-    // TODO add group number for bulk matching
+    private:
+        Order() = default;
 
-    /// @brief Time the order was recieved by the service
-    unsigned long ordNum;
-    /// @brief Number of items filled. 
-    unsigned int fill = 0;
+    friend class OrderBuilder;
 
-    /// @brief Determine if the order should be treated as a market order based on the current market price.
-    /// @param marketPrice 
-    /// @return 
-    bool treatAsMarket(const Spread& spread) const;
+    // TODO remove these later
+    friend class Matcher;
+    friend class Notifier;
 
-    /// @brief Determine if the order should be treated as a limit order based on the current market price
-    /// @param spread 
-    /// @return 
-    bool treatAsLimit(const Spread& spread) const;
+};
 
-    bool fillComplete() const {
-        return qty == fill;
-    }
+class OrderBuilder{
+    Order order{};
+    bool typeSet = false;
+    bool assetSet = false;
+    bool traderIdSet = false;
+    bool ordIdSet = false;
 
-    unsigned int unfilled() const {
-        // A bit dangerous. unfilled should NEVER be negative
-        return qty - fill;
-    }
+    public:
+        OrderBuilder& limit(Side side, std::int32_t price, std::uint32_t qty);
+        OrderBuilder& market(Side side, std::uint32_t qty);
+        OrderBuilder& stop(Side side, std::int32_t stopPrice, std::uint32_t qty);
+        OrderBuilder& stopLimit(Side side, std::int32_t price, std::int32_t stopPrice, std::uint32_t qty);
 
-    Order() = default;
-
-    Order(
-        std::string asset_,
-        Side side_,
-        OrdType type_,
-        unsigned short price_ = 0,
-        unsigned int qty_ = 0,
-        unsigned short stopPrice_ = 0
-    ){
-
-        // Limit the size of asset name lengths to take advantage of small string optimization (SSO)
-        if(asset_.length() > MAX_ASSET_LENGTH){
-            std::__throw_length_error("asset exceeds maximum length");
-        }
-
-        asset = asset_;
-        side = side_;
-        type = type_;
-        price = price_;
-        qty = qty_;
-        stopPrice = stopPrice_;
-    }
+        OrderBuilder& withAsset(const std::string& asset);
+        OrderBuilder& withTraderId(std::int64_t traderId);
+        OrderBuilder& withOrdId(std::int64_t ordId);     
+        OrderBuilder& withIncrementedOrderId();
+        
+        Order build();
 };

@@ -1,38 +1,30 @@
 #pragma once
 
 #include <vector>
-#include "order.h"
 #include <stdexcept>
+
+#include "order.h"
 
 struct Match{
     Order buyer;
     Order seller;
-    long qty;
-
+    std::uint32_t qty;
+    std::int32_t price;
+    
     public:
-        Match(const Order& ord1, const Order& ord2, long qty_)
-        {
-            if (ord1.side == ord2.side) { std::logic_error("Can't match orders on the same side!"); }
-            if (ord1.asset != ord2.asset) { std::logic_error("Can't match orders with different assets!"); } // TODO add test for this
-            if (ord1.side == BUY){
-                buyer = ord1;
-                seller = ord2;
-            }
-            else{
-                buyer = ord2;
-                seller = ord1;
-            }
+        Match(const Order& buyer_, const Order& seller_, std::uint32_t qty_, std::int32_t price_):
+            buyer(buyer_),
+            seller(seller_),
+            qty(qty_),
+            price(price_){}
 
-            qty = qty_;
-        }
-
-        long cashTransfered() const{
+        std::int64_t cashTransfered() const{
 
             if(buyer.type == LIMIT || buyer.type == STOPLIMIT){
-                return (long)buyer.price * qty;
+                return (std::int64_t)price * qty;
             }
             else if (seller.type == LIMIT || seller.type == STOPLIMIT){
-                return (long)seller.price * qty;
+                return (std::int64_t)price * qty;
             }
             
             throw std::logic_error("Can't determine cashTransfered with thr provided order types!");

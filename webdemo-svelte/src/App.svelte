@@ -17,6 +17,8 @@
   let params: SimulationParams = { ...DEFAULT_PARAMS };
   let history: SpreadHistoryPoint[] = [];
   let latestObservation: ObservationSnapshot | null = null;
+  let tickTimestamps: number[] = [];
+  const TPS_WINDOW = 60;
   let status: SimulationStatus = {
     phase: 'loading',
     message: 'Loading WebAssembly module…',
@@ -26,6 +28,8 @@
   const handlers: SimulationHandlers = {
     onObservation(snapshot) {
       latestObservation = snapshot;
+      const now = performance.now();
+      tickTimestamps = [...tickTimestamps, now].slice(-TPS_WINDOW);
       history = [
         ...history,
         {
@@ -49,6 +53,7 @@
   async function startSimulation() {
     history = [];
     latestObservation = null;
+    tickTimestamps = [];
     errorMessage = '';
     await controller.start(params, handlers);
   }
@@ -66,6 +71,9 @@
   $: spreadLabel = latestObservation?.spread
     ? `Bid ${latestObservation.spread.bidsMissing ? 'NA' : latestObservation.spread.highestBid} / Ask ${latestObservation.spread.asksMissing ? 'NA' : latestObservation.spread.lowestAsk}`
     : 'Spread not available yet';
+  $: ticksPerSecond = tickTimestamps.length > 1
+    ? Math.round((tickTimestamps.length - 1) / ((tickTimestamps[tickTimestamps.length - 1] - tickTimestamps[0]) / 1000))
+    : 0;
 
   onMount(() => {
     controller = new SimulationController();
@@ -125,6 +133,10 @@
           <div>
             <dt>Tracked ticks</dt>
             <dd>{history.length}</dd>
+          </div>
+          <div>
+            <dt>Ticks/sec</dt>
+            <dd>{ticksPerSecond}</dd>
           </div>
           <div>
             <dt>Consumers</dt>

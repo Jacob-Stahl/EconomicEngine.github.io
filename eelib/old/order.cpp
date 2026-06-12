@@ -3,7 +3,55 @@
 #include <cstring>
 #include "order.h"
 
-OrderBuilder& OrderBuilder::limit(Side side, std::int32_t price, std::uint32_t qty){
+bool Order::treatAsMarket(const Spread& spread) const{
+    switch(type){
+        case MARKET:
+            return true;
+        case LIMIT:
+            return false;
+        case STOPLIMIT:
+            return false;
+        case STOP : {
+
+            /*
+            https://www.onixs.biz/fix-dictionary/4.4/glossary.html#Stop:~:text=Stop-,A%20stop%20order%20to%20buy%20which%20becomes%20a%20market%20order%20when,stop%20price%20after%20the%20order%20is%20represented%20in%20the%20Trading%20Crowd.,-OrdType%20%3C40%3E      
+            Treat buy-stop as a buy-market if marketPrice >= price
+            Treat sell-stop as a sell-market if marketPrice <= price
+            */
+            if (side == BUY) {
+                if (spread.asksMissing) return false;
+                return spread.lowestAsk >= stopPrice;
+            } else {
+                if (spread.bidsMissing) return false;
+                return spread.highestBid <= stopPrice;
+            }
+        }
+    }
+}
+
+bool Order::treatAsLimit(const Spread& spread) const {
+    switch(type){
+        case MARKET:
+            return false;
+        case LIMIT:
+            return true;
+        case STOPLIMIT:
+            if(side == BUY){
+                if (spread.asksMissing) return false;
+                return spread.lowestAsk >= stopPrice;
+            } else {
+                if (spread.bidsMissing) return false;
+                return spread.highestBid <= stopPrice;
+            }
+        case STOP : {
+            return false;
+        }
+    }
+}
+
+
+// Order 2
+OrderBuilder& OrderBuilder::limit(Side side, int price, unsigned int qty){
     typeSet = true;
 
     order.type = LIMIT;
@@ -15,7 +63,7 @@ OrderBuilder& OrderBuilder::limit(Side side, std::int32_t price, std::uint32_t q
     return *this;
 }
 
-OrderBuilder& OrderBuilder::stopLimit(Side side, std::int32_t price, std::int32_t stopPrice, std::uint32_t qty){
+OrderBuilder& OrderBuilder::stopLimit(Side side, int price, int stopPrice, unsigned int qty){
     if(price == stopPrice){
         throw std::logic_error("STOPLIMIT stop price can't be the same as the limit price. Place a LIMIT instead.");
     }
@@ -41,7 +89,7 @@ OrderBuilder& OrderBuilder::stopLimit(Side side, std::int32_t price, std::int32_
     return *this;
 }
 
-OrderBuilder& OrderBuilder::market(Side side, std::uint32_t qty){
+OrderBuilder& OrderBuilder::market(Side side, unsigned int qty){
     typeSet = true;
     order.type = MARKET;
     order.side = side;
@@ -51,7 +99,7 @@ OrderBuilder& OrderBuilder::market(Side side, std::uint32_t qty){
     return *this;
 }
 
-OrderBuilder& OrderBuilder::stop(Side side, std::int32_t stopPrice, std::uint32_t qty){
+OrderBuilder& OrderBuilder::stop(Side side, int stopPrice, unsigned int qty){
     typeSet = true;
     order.type = STOP;
     order.side = side;
@@ -62,7 +110,7 @@ OrderBuilder& OrderBuilder::stop(Side side, std::int32_t stopPrice, std::uint32_
     return *this;
 }
 
-Order OrderBuilder::build(){
+Order2 OrderBuilder::build(){
 
     if(!typeSet){
         throw std::logic_error("Order type not set!");
@@ -84,9 +132,7 @@ Order OrderBuilder::build(){
         throw std::logic_error("Order qty must be > 0");
     };
 
-    auto builtOrder = std::move(order);
-    order = Order{};
-    return builtOrder;
+    return order;
 }
 
 OrderBuilder& OrderBuilder::withAsset(const std::string& asset){
@@ -100,22 +146,14 @@ OrderBuilder& OrderBuilder::withAsset(const std::string& asset){
     return *this;
 }
 
-OrderBuilder& OrderBuilder::withTraderId(std::int64_t traderId){
+OrderBuilder& OrderBuilder::withTraderId(long traderId){
     traderIdSet = true;
     order.traderId = traderId;
     return *this;
 }
 
-OrderBuilder& OrderBuilder::withOrdId(std::int64_t ordId){
+OrderBuilder& OrderBuilder::withOrdId(long ordId){
     ordIdSet = true;
     order.ordId = ordId;
-    return *this;
-}
-
-OrderBuilder& OrderBuilder::withIncrementedOrderId(){
-    static std::int64_t nextOrdId = 1;
-
-    ordIdSet = true;
-    order.ordId = nextOrdId++;
     return *this;
 }

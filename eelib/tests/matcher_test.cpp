@@ -1,508 +1,651 @@
 #include <gtest/gtest.h>
+#include "../matcher.h"
+#include "../notifier.h"
+#include "../order.h"
 
-#include "matcher.h"
-#include "notifier.h"
-#include "order.h"
+class MatcherTest : public ::testing::Test {
+protected:
+    Matcher matcher;
 
-struct MatcherTest : ::testing::Test {
-    InMemoryNotifier notifier;
-    Matcher matcher{&notifier};
+    void SetUp() override {}
 
-    long int lastOrdNum = 1;
+    Order makeLimit(long ordId, Side side, int price, unsigned int qty) {
+        return OrderBuilder()
+            .limit(side, price, qty)
+            .withAsset("TEST")
+            .withTraderId(1)
+            .withOrdId(ordId)
+            .build();
+    }
 
-    Order& newOrder(Side side, OrdType type, long qty, long price = 0, long stopPrice = 0){
-        Order* o = new Order{};
-        o->traderId = lastOrdNum;
-        o->ordId = lastOrdNum;
-        o->side = side;
-        o->qty = qty;
-        o->price = price;
-        o->stopPrice = stopPrice;
-        o->asset = "TEST";
-        o->type = type;
+    Order makeMarket(long ordId, Side side, unsigned int qty) {
+        return OrderBuilder()
+            .market(side, qty)
+            .withAsset("TEST")
+            .withTraderId(1)
+            .withOrdId(ordId)
+            .build();
+    }
 
-        ++lastOrdNum;
+    Order makeStop(long ordId, Side side, int stopPrice, unsigned int qty) {
+        return OrderBuilder()
+            .stop(side, stopPrice, qty)
+            .withAsset("TEST")
+            .withTraderId(1)
+            .withOrdId(ordId)
+            .build();
+    }
 
-        // This will cause a leak. Probably fine for a unit test helper
-        return *o;
+    Order makeStopLimit(long ordId, Side side, int limitPrice, int stopPrice, unsigned int qty) {
+        return OrderBuilder()
+            .stopLimit(side, limitPrice, stopPrice, qty)
+            .withAsset("TEST")
+            .withTraderId(1)
+            .withOrdId(ordId)
+            .build();
     }
 };
 
-TEST_F(MatcherTest, EmptyBook_EmptySpread){
-    auto spread = matcher.getSpread();
-    auto backlog = matcher.getMarketBacklog();
-    EXPECT_TRUE(spread.asksMissing && spread.bidsMissing);
-    EXPECT_EQ(0, backlog.bidMarketQty);
-    EXPECT_EQ(0, backlog.askMarketQty);
-}
+TEST_F(MatcherTest, PlaceBuyAndSellLimits_NoMatch_StateIsCorrect) {
+    // Arrange & Act
+
+    matcher.placeOrder(makeLimit(1, BUY, 100, 1));
+    matcher.placeOrder(makeLimit(2, SELL, 110, 1));
+    matcher.placeOrder(makeLimit(3, BUY, 90, 1));
+    matcher.placeOrder(makeLimit(4, SELL, 120, 1));
 
 
-TEST_F(MatcherTest, AddSellLimit_PopulatesAsk){
-    auto sell = newOrder(SELL, LIMIT, 5, 900);
-    matcher.addOrder(sell);
-    auto spread = matcher.getSpread();
-    auto backlog = matcher.getMarketBacklog();
-    EXPECT_FALSE(spread.asksMissing);
-    EXPECT_EQ(sell.price, spread.lowestAsk);
-    EXPECT_TRUE(spread.bidsMissing);
-    EXPECT_EQ(0, backlog.bidMarketQty);
-    EXPECT_EQ(0, backlog.askMarketQty);
-    
-    EXPECT_EQ(1, notifier.placedOrders.size());
-    EXPECT_EQ(sell.ordId, notifier.placedOrders[0].ordId);
-    EXPECT_EQ(LIMIT, notifier.placedOrders[0].type);
-}
+    const Spread& spread = matcher.getSpread();
 
-TEST_F(MatcherTest, AddBuyLimit_PopulatesBid){
-    auto buy = newOrder(BUY, LIMIT, 5, 900);
-    matcher.addOrder(buy);
-    auto spread = matcher.getSpread();
-    auto backlog = matcher.getMarketBacklog();
+    // Assert
+
+    // No matches or cancellations expected
+    EXPECT_EQ(0, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+
+    // 4 orders have been registered
+    //EXPECT_EQ(4, matcher.notifier->orderRegistery.size());
+
+    // check spread
     EXPECT_FALSE(spread.bidsMissing);
-    EXPECT_EQ(buy.price, spread.highestBid);
-    EXPECT_TRUE(spread.asksMissing);
-    EXPECT_EQ(0, backlog.bidMarketQty);
-    EXPECT_EQ(0, backlog.askMarketQty);
-
-    EXPECT_EQ(1, notifier.placedOrders.size());
-    EXPECT_EQ(buy.ordId, notifier.placedOrders[0].ordId);
-    EXPECT_EQ(LIMIT, notifier.placedOrders[0].type);
+    EXPECT_FALSE(spread.asksMissing);
+    EXPECT_EQ(spread.highestBid, 100);
+    EXPECT_EQ(spread.lowestAsk, 110);
 }
 
-TEST_F(MatcherTest, AddBuyMarket_PopulatesMarketOrders){
-    auto order = newOrder(BUY, MARKET, 5);
-    matcher.addOrder(order);
-    auto spread = matcher.getSpread();
-    auto backlog = matcher.getMarketBacklog();
-    EXPECT_TRUE(spread.asksMissing && spread.bidsMissing);
-    EXPECT_EQ(5, backlog.bidMarketQty);
-    EXPECT_EQ(0, backlog.askMarketQty);
-
-    EXPECT_EQ(1, notifier.placedOrders.size());
-    EXPECT_EQ(order.ordId, notifier.placedOrders[0].ordId);
-    EXPECT_EQ(MARKET, notifier.placedOrders[0].type);
-    EXPECT_EQ(BUY, notifier.placedOrders[0].side);
-}
-
-TEST_F(MatcherTest, AddSellMarket_PopulatesMarketOrders){
-    auto order = newOrder(SELL, MARKET, 5);
-    matcher.addOrder(order);
-    auto spread = matcher.getSpread();
-    auto backlog = matcher.getMarketBacklog();
-    EXPECT_TRUE(spread.asksMissing && spread.bidsMissing);
-    EXPECT_EQ(0, backlog.bidMarketQty);
-    EXPECT_EQ(5, backlog.askMarketQty);
-
-    EXPECT_EQ(1, notifier.placedOrders.size());
-    EXPECT_EQ(order.ordId, notifier.placedOrders[0].ordId);
-    EXPECT_EQ(MARKET, notifier.placedOrders[0].type);
-    EXPECT_EQ(SELL, notifier.placedOrders[0].side);
-}
-
-TEST_F(MatcherTest, BuyLimit_Match_SellMarket){
-    auto ask = newOrder(SELL, MARKET, 5);
-    auto bid = newOrder(BUY, LIMIT, 5, 250);
-    matcher.addOrder(ask);
-    matcher.addOrder(bid);
-    auto spread = matcher.getSpread();
-    auto backlog = matcher.getMarketBacklog();
-
-    EXPECT_EQ(2, notifier.placedOrders.size());
-    EXPECT_EQ(1, notifier.matches.size());
-
-    EXPECT_TRUE(spread.asksMissing && spread.bidsMissing);
-    EXPECT_EQ(0, backlog.bidMarketQty);
-    EXPECT_EQ(0, backlog.askMarketQty);
-}
-
-TEST_F(MatcherTest, SellLimit_Match_BuyMarket){
-    auto bid = newOrder(BUY, MARKET, 5);
-    auto ask = newOrder(SELL, LIMIT, 5, 250);
-    matcher.addOrder(bid);
-    matcher.addOrder(ask);
-    auto spread = matcher.getSpread();
-    auto backlog = matcher.getMarketBacklog();
-
-    EXPECT_EQ(2, notifier.placedOrders.size());
-    EXPECT_EQ(1, notifier.matches.size());
-
-    EXPECT_TRUE(spread.asksMissing && spread.bidsMissing);
-    EXPECT_EQ(0, backlog.bidMarketQty);
-    EXPECT_EQ(0, backlog.askMarketQty);
-}
-
-TEST_F(MatcherTest, PlaceLimits_SpreadIsCorrect){
-    std::vector<Order> orders = {
-        newOrder(BUY, LIMIT, 100, 5),
-        newOrder(SELL, LIMIT, 100, 10),
-        newOrder(BUY, LIMIT, 100, 6),
-        newOrder(SELL, LIMIT, 100, 12)
-    };
-
-    for(auto order : orders){
-        matcher.addOrder(order);
-    }
-
-    EXPECT_EQ(orders.size(), notifier.placedOrders.size());
-    EXPECT_EQ(0, notifier.matches.size());
-
-    auto spread = matcher.getSpread();
-    auto backlog = matcher.getMarketBacklog();
-    EXPECT_FALSE(spread.asksMissing || spread.bidsMissing);
-    EXPECT_EQ(10, spread.lowestAsk);
-    EXPECT_EQ(6, spread.highestBid);
-    EXPECT_EQ(0, backlog.bidMarketQty);
-    EXPECT_EQ(0, backlog.askMarketQty);
-}
-
-
-TEST_F(MatcherTest, MatchLimitsAndMarkets_MatchesAndSpreadAreCorrect){
-    std::vector<Order> orders = {
-        newOrder(BUY, LIMIT, 100, 5), // <- Sell-Market should half fill this guy
-        newOrder(SELL, LIMIT, 100, 10), // <- Buy-Markets should fill this guy
-        newOrder(BUY, LIMIT, 100, 6),  // <- Sell-Market should completely fill this guy
-        newOrder(SELL, LIMIT, 100, 12),
-
-        // Now place market orders
-        newOrder(BUY, MARKET, 50),
-        newOrder(BUY, MARKET, 50),
-        newOrder(SELL, MARKET, 150)
-    };
-
-    for(auto order : orders){
-        matcher.addOrder(order);
-    }
-
-    // Check Notifier
-    EXPECT_EQ(orders.size(), notifier.placedOrders.size());
-    EXPECT_EQ(4, notifier.matches.size());
-
-    // Check Matches
-    EXPECT_EQ(orders[1].ordId, notifier.matches[0].seller.ordId); // Market-Buys
-    EXPECT_EQ(orders[4].ordId, notifier.matches[0].buyer.ordId);
-    EXPECT_EQ(50, notifier.matches[0].qty);
-    EXPECT_EQ(orders[1].ordId, notifier.matches[1].seller.ordId);
-    EXPECT_EQ(orders[5].ordId, notifier.matches[1].buyer.ordId);
-    EXPECT_EQ(50, notifier.matches[1].qty);
-
-    EXPECT_EQ(orders[6].ordId, notifier.matches[2].seller.ordId); // Market-Sell
-    EXPECT_EQ(orders[2].ordId, notifier.matches[2].buyer.ordId);
-    EXPECT_EQ(100, notifier.matches[2].qty);
-    EXPECT_EQ(orders[6].ordId, notifier.matches[3].seller.ordId);
-    EXPECT_EQ(orders[0].ordId, notifier.matches[3].buyer.ordId);
-    EXPECT_EQ(50, notifier.matches[3].qty);
-
-    // Check Spread
-    auto spread = matcher.getSpread();
-    auto backlog = matcher.getMarketBacklog();
-    EXPECT_FALSE(spread.asksMissing || spread.bidsMissing);
-    EXPECT_EQ(12, spread.lowestAsk);
-    EXPECT_EQ(5, spread.highestBid);
-    EXPECT_EQ(0, backlog.bidMarketQty);
-    EXPECT_EQ(0, backlog.askMarketQty);
-}
-
-TEST_F(MatcherTest, MatchStopLimits_MatchesAndSpreadAreCorrect){
-    std::vector<Order> orders = {
-        newOrder(BUY, STOPLIMIT,  420, 60, 70), // <- Irrational stop order will get rejected
-
-        newOrder(SELL, LIMIT,     100, 60),
-        newOrder(BUY, STOPLIMIT,  100, 50, 45),      // <- 3rd, this is only matched when the highest ask moves above the stop price
-        newOrder(SELL, LIMIT,     100, 40),          // <- 2nd, price moves above STOP price for STOPLIMIT after this is matched
-
-        newOrder(BUY, LIMIT, 100, 20),               // <- 1st, even though the STOPLIMIT above has a higher offer, we are below the STOP price
-        
-        newOrder(SELL, MARKET, 100), // Match BUY  LIMIT
-        newOrder(BUY,  MARKET, 100), // Match SELL LIMIT
-        newOrder(SELL, MARKET, 100), // Match BUY  STOPLIMIT
-    };
-
-    for(auto order : orders){
-        matcher.addOrder(order);
-    }
-
-    // Check Notifier
-    EXPECT_EQ(1, notifier.placementFailedOrders.size());
-    EXPECT_EQ(7, notifier.placedOrders.size());
-    EXPECT_EQ(3, notifier.matches.size());
-
-    // Check Matches
-    EXPECT_EQ(orders[4].ordId, notifier.matches[0].buyer.ordId); // SELL MARKET
-    EXPECT_EQ(orders[5].ordId, notifier.matches[0].seller.ordId);
-
-    EXPECT_EQ(orders[6].ordId, notifier.matches[1].buyer.ordId); // BUY MARKET
-    EXPECT_EQ(orders[3].ordId, notifier.matches[1].seller.ordId);
-
-    EXPECT_EQ(orders[7].ordId, notifier.matches[2].seller.ordId); // SELL MARKET matches with the  BUY STOP LIMIT
-    EXPECT_EQ(orders[2].ordId, notifier.matches[2].buyer.ordId);
-
-    // Check Spread
-    auto spread = matcher.getSpread();
-    auto backlog = matcher.getMarketBacklog();
-    EXPECT_EQ(60, spread.lowestAsk);
-    EXPECT_TRUE(spread.bidsMissing);
-    EXPECT_EQ(0, backlog.bidMarketQty);
-    EXPECT_EQ(0, backlog.askMarketQty);
-
-}
-
-TEST_F(MatcherTest, SellStop_TriggersAfterWittlingBuys){
-    // Place several buy limit orders
-    Order buy1 = newOrder(BUY, LIMIT, 50, 100);
-    Order buy2 = newOrder(BUY, LIMIT, 50, 90);
-    Order buy3 = newOrder(BUY, LIMIT, 50, 80);
-
-    // Place a sell STOP with stop price in the middle (90)
-    Order sellStop = newOrder(SELL, STOP, 50, 0, 90);
-
-    matcher.addOrder(buy1);
-    matcher.addOrder(buy2);
-    matcher.addOrder(buy3);
-    matcher.addOrder(sellStop);
-    auto backlog = matcher.getMarketBacklog();
-
-    // No matches yet; stop should be inactive
-    EXPECT_EQ(4, notifier.placedOrders.size());
-    EXPECT_EQ(0, notifier.matches.size());
-    EXPECT_EQ(0, backlog.bidMarketQty);
-    EXPECT_EQ(50, backlog.askMarketQty);
-
-    // Use SELL MARKET orders to eat into the buy ladder
-    matcher.addOrder(newOrder(SELL, MARKET, 50)); // consumes buy1 @100
-    EXPECT_GE(notifier.matches.size(), 1);
-
-    matcher.addOrder(newOrder(SELL, MARKET, 50)); // consumes buy2 @90 -> should trigger stop
-
-    // After wittling down buys, the SELL STOP should have executed and produced at least one match
-    bool stopExecuted = false;
-    for(auto &m : notifier.matches){
-        if(m.seller.ordId == sellStop.ordId){ stopExecuted = true; break; }
-    }
-
-    EXPECT_TRUE(stopExecuted);
-
-    backlog = matcher.getMarketBacklog();
-    EXPECT_EQ(0, backlog.bidMarketQty);
-    EXPECT_EQ(0, backlog.askMarketQty);
-}
-
-TEST_F(MatcherTest, DumpOrdersTo_ExcludesCompletelyFilledOrders){
-    // Place a buy limit that will be completely filled
-    auto buyLimit1 = newOrder(BUY, LIMIT, 100, 10);
-    // Place a sell market that will match and remove the buy limit
-    auto sellMarket = newOrder(SELL, MARKET, 100);
-
-    // Place additional limits that should remain (one will be partially filled)
-    auto buyLimit2 = newOrder(BUY, LIMIT, 50, 5);
-    auto sellLimit = newOrder(SELL, LIMIT, 30, 15);
-
-    matcher.addOrder(buyLimit1);
-    matcher.addOrder(sellMarket); // consumes buyLimit1 entirely
-    matcher.addOrder(buyLimit2);
-    matcher.addOrder(sellLimit);
-
-    // Partially consume the sell limit (leaves it with remaining qty)
-    matcher.addOrder(newOrder(BUY, MARKET, 10));
-
-    // Dump remaining orders
-    std::vector<Order> dumped;
-    matcher.dumpOrdersTo(dumped);
-    auto backlog = matcher.getMarketBacklog();
-
-    bool foundBuyLimit1 = false;
-    bool foundSellMarket = false;
-    bool foundBuyLimit2 = false;
-    bool foundSellLimit = false;
-    for (auto &o : dumped){
-        if (o.ordId == buyLimit1.ordId) foundBuyLimit1 = true;
-        if (o.ordId == sellMarket.ordId) foundSellMarket = true;
-        if (o.ordId == buyLimit2.ordId) foundBuyLimit2 = true;
-        if (o.ordId == sellLimit.ordId){
-            foundSellLimit = true;
-            EXPECT_GT(o.fill, 0);    // it was partially filled
-            EXPECT_LT(o.fill, o.qty); // still has remaining qty
-        }
-    }
-
-    // Completely filled orders should NOT be present
-    EXPECT_FALSE(foundBuyLimit1);
-    EXPECT_FALSE(foundSellMarket);
-
-    // Partially filled / unfilled limits should be present
-    EXPECT_TRUE(foundBuyLimit2);
-    EXPECT_TRUE(foundSellLimit);
-    EXPECT_EQ(0, backlog.bidMarketQty);
-    EXPECT_EQ(0, backlog.askMarketQty);
-}
-
-TEST_F(MatcherTest, GetOrderCounts_ReturnsCorrectCounts){
-    auto o1 = newOrder(BUY, MARKET, 1); // Should be matched with STOPLIMIT
-    auto o2 = newOrder(BUY, LIMIT, 1, 100);
-    auto o3 = newOrder(SELL, STOP, 1, 0, 50);
-    auto o4 = newOrder(SELL, STOPLIMIT, 1, 200, 210); // Should be matched with MARKET
-    auto o5 = newOrder(BUY, LIMIT, 1, 120);
-
-    matcher.addOrder(o1);
-    matcher.addOrder(o2);
-    matcher.addOrder(o3);
-    matcher.addOrder(o4);
-    matcher.addOrder(o5);
-
-    EXPECT_EQ(1, notifier.matches.size());
-    EXPECT_EQ(5, notifier.placedOrders.size());
-    EXPECT_EQ(0, notifier.placementFailedOrders.size());
-
-    auto counts = matcher.getOrderCounts();
-    EXPECT_EQ(0, counts.at(MARKET));
-    EXPECT_EQ(2, counts.at(LIMIT));
-    EXPECT_EQ(1, counts.at(STOP));
-    EXPECT_EQ(0, counts.at(STOPLIMIT));
-}
-
-TEST_F(MatcherTest, CancelAllOrderTypes){
-    auto market    = newOrder(BUY, MARKET, 10);
-    auto limit     = newOrder(SELL, LIMIT, 10, 100);
-    auto stop      = newOrder(BUY, STOP, 10, 0, 50);
-    auto stoplimit = newOrder(SELL, STOPLIMIT, 10, 110, 120);
-
-    // Add without immediate matching
-    matcher.addOrder(market, false);
-    matcher.addOrder(limit, false);
-    matcher.addOrder(stop, false);
-    matcher.addOrder(stoplimit, false);
-
-    // Cancel all four
-    matcher.cancelOrder(market.ordId);
-    matcher.cancelOrder(limit.ordId);
-    matcher.cancelOrder(stop.ordId);
-    matcher.cancelOrder(stoplimit.ordId);
-
-    // Trigger matching/cleanup by placing small market orders
-    matcher.addOrder(newOrder(BUY, MARKET, 1));
-    matcher.addOrder(newOrder(SELL, MARKET, 1));
-
-    // Dump remaining orders and ensure canceled ones are not present
-    std::vector<Order> dumped;
-    matcher.dumpOrdersTo(dumped);
-
-    for (auto &o : dumped){
-        EXPECT_NE(o.ordId, market.ordId);
-        EXPECT_NE(o.ordId, limit.ordId);
-        EXPECT_NE(o.ordId, stop.ordId);
-        EXPECT_NE(o.ordId, stoplimit.ordId);
-    }
-
-    // Ensure no match involves any of the canceled orders
-    for (auto &m : notifier.matches){
-        EXPECT_NE(m.buyer.ordId, market.ordId);
-        EXPECT_NE(m.seller.ordId, limit.ordId);
-        EXPECT_NE(m.buyer.ordId, stop.ordId);
-        EXPECT_NE(m.seller.ordId, stoplimit.ordId);
-    }
-}
-
-TEST_F(MatcherTest, CleanupCanceledOrders_RemovesCanceledOrdersWithoutMatching){
-    auto market = newOrder(BUY, MARKET, 10);
-    auto buyLimit = newOrder(BUY, LIMIT, 10, 100);
-    auto sellLimit = newOrder(SELL, LIMIT, 10, 110);
-
-    matcher.addOrder(market, false);
-    matcher.addOrder(buyLimit, false);
-    matcher.addOrder(sellLimit, false);
-
-    matcher.cancelOrder(market.ordId);
-    matcher.cancelOrder(buyLimit.ordId);
-    matcher.cancelOrder(sellLimit.ordId);
-    matcher.cleanupCanceledOrders();
-
-    std::vector<Order> dumped;
-    matcher.dumpOrdersTo(dumped);
-
-    EXPECT_TRUE(dumped.empty());
-
-    auto spread = matcher.getSpread();
+TEST_F(MatcherTest, PlaceBuyAndSellLimits_SpreadCrossed_StateIsCorrect){
+    // Arrange & Act
+    matcher.placeOrder(makeLimit(1, BUY, 100, 1));
+    matcher.placeOrder(makeLimit(2, SELL, 110, 1));
+    matcher.placeOrder(makeLimit(3, BUY, 111, 1));
+    matcher.placeOrder(makeLimit(4, SELL, 99, 1));
+
+    const Spread& spread = matcher.getSpread();
+
+    // Expect 2 matches. No cancellations expected
+    EXPECT_EQ(2, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+
+    // check spread
     EXPECT_TRUE(spread.bidsMissing);
     EXPECT_TRUE(spread.asksMissing);
 
-    auto depth = matcher.getDepth();
-    EXPECT_TRUE(depth.bidBins.empty());
-    EXPECT_TRUE(depth.askBins.empty());
+    // Check matches
 
-    auto counts = matcher.getOrderCounts();
-    EXPECT_EQ(0, counts.at(MARKET));
-    EXPECT_EQ(0, counts.at(LIMIT));
-    EXPECT_EQ(0, counts.at(STOP));
-    EXPECT_EQ(0, counts.at(STOPLIMIT));
+    EXPECT_EQ(3, matcher.notifier->matches[0].buyer.ordId);
+    EXPECT_EQ(2, matcher.notifier->matches[0].seller.ordId);
+    EXPECT_EQ(1, matcher.notifier->matches[0].qty);
+    EXPECT_EQ(110, matcher.notifier->matches[0].price);
+
+    EXPECT_EQ(1, matcher.notifier->matches[1].buyer.ordId);
+    EXPECT_EQ(4, matcher.notifier->matches[1].seller.ordId);
+    EXPECT_EQ(1, matcher.notifier->matches[1].qty);
+    EXPECT_EQ(100, matcher.notifier->matches[1].price);
 }
 
-TEST_F(MatcherTest, GetDepth_ReturnsCumulativeBins){
-    // Setup: two buy price levels and two sell price levels
-    auto buyLow  = newOrder(BUY,  LIMIT, 40,  90);
-    auto buyHigh = newOrder(BUY,  LIMIT, 50, 100);
-    auto sellLow = newOrder(SELL, LIMIT, 20, 110);
-    auto sellHigh= newOrder(SELL, LIMIT, 30, 120);
+TEST_F(MatcherTest, PlaceBuyAndSellLimitsAndMarkets_SpreadCrossed_StateIsCorrect){
+    // Arrange & Act
+    matcher.placeOrder(makeLimit(1, BUY, 100, 1));
+    matcher.placeOrder(makeLimit(2, SELL, 110, 1));
+    matcher.placeOrder(makeMarket(3, BUY, 1));
+    matcher.placeOrder(makeMarket(4, SELL, 1));
 
-    matcher.addOrder(buyLow);
-    matcher.addOrder(buyHigh);
-    matcher.addOrder(sellLow);
-    matcher.addOrder(sellHigh);
+    const Spread& spread = matcher.getSpread();
 
-    Depth d = matcher.getDepth();
+    // Expect 2 matches. No cancellations expected
+    EXPECT_EQ(2, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
 
-    // Bids should be sorted highest -> lowest and cumulative
-    ASSERT_EQ(2u, d.bidBins.size());
-    EXPECT_EQ(100u,  d.bidBins[0].price);      // first bin price 100
-    EXPECT_EQ(50u,   d.bidBins[0].totalQty);  // cumulative at 100 = 50
-    EXPECT_EQ(90u,   d.bidBins[1].price);     // next price 90
-    EXPECT_EQ(90u,   d.bidBins[1].totalQty);  // cumulative at 90 = 50 + 40
+    // check spread
+    EXPECT_TRUE(spread.bidsMissing);
+    EXPECT_TRUE(spread.asksMissing);
 
-    // Asks should be sorted lowest -> highest and cumulative
-    ASSERT_EQ(2u, d.askBins.size());
-    EXPECT_EQ(110u, d.askBins[0].price);      // first ask price 110
-    EXPECT_EQ(20u,  d.askBins[0].totalQty);  // cumulative at 110 = 20
-    EXPECT_EQ(120u, d.askBins[1].price);     // next price 120
-    EXPECT_EQ(50u,  d.askBins[1].totalQty);  // cumulative at 120 = 20 + 30
+    // Check matches
+    EXPECT_EQ(3, matcher.notifier->matches[0].buyer.ordId);
+    EXPECT_EQ(2, matcher.notifier->matches[0].seller.ordId);
+    EXPECT_EQ(1, matcher.notifier->matches[0].qty);
+    EXPECT_EQ(110, matcher.notifier->matches[0].price);
+
+    EXPECT_EQ(1, matcher.notifier->matches[1].buyer.ordId);
+    EXPECT_EQ(4, matcher.notifier->matches[1].seller.ordId);
+    EXPECT_EQ(1, matcher.notifier->matches[1].qty);
+    EXPECT_EQ(100, matcher.notifier->matches[1].price);
 }
 
-TEST_F(MatcherTest, CanceledOrdersAreInvisibleInReflectedState){
-    // Place orders that define the BBO
-    auto buy = newOrder(BUY, LIMIT, 10, 100);
-    auto sell = newOrder(SELL, LIMIT, 10, 110);
-    matcher.addOrder(buy);
-    matcher.addOrder(sell);
+TEST_F(MatcherTest, CancelLimitOrder_NotMatched_StateIsCorrect){
+    matcher.placeOrder(makeLimit(1, BUY, 100, 1));
+    matcher.placeOrder(makeLimit(2, SELL, 110, 1));
 
-    // Verify initial state
-    auto spread = matcher.getSpread();
+    // Cancel 2 then 1
+    matcher.cancelOrder(2);
+    matcher.cancelOrder(1);
+
+    // Expect 2 cancellations so far
+    EXPECT_EQ(2, matcher.notifier->cancellations.size());
+
+    matcher.placeOrder(makeMarket(3, BUY, 1));
+    matcher.placeOrder(makeMarket(4, SELL, 1));
+
+    const Spread& spread = matcher.getSpread();
+
+    // Expect no matches or cancellations expected
+    EXPECT_EQ(0, matcher.notifier->matches.size());
+    EXPECT_EQ(4, matcher.notifier->cancellations.size());
+
+    // check spread
+    EXPECT_TRUE(spread.bidsMissing);
+    EXPECT_TRUE(spread.asksMissing);
+
+    // Check cancellations. 
+    // First 2 are cancelled manually, in correct order
+    EXPECT_EQ(2, matcher.notifier->cancellations[0]);
+    EXPECT_EQ(1, matcher.notifier->cancellations[1]);
+
+    // Next 2 market orders are cancelled because there is no liquidity
+    EXPECT_EQ(3, matcher.notifier->cancellations[2]);
+    EXPECT_EQ(4, matcher.notifier->cancellations[3]);   
+}
+
+TEST_F(MatcherTest, PlaceBuyAndSellLimits_SpreadCrossed_LiquidityNotDrained_StateIsCorrect){
+    // Arrange & Act
+    matcher.placeOrder(makeLimit(1, BUY, 100, 2));
+    matcher.placeOrder(makeLimit(2, SELL, 110, 2));
+    matcher.placeOrder(makeMarket(3, BUY, 1));
+    matcher.placeOrder(makeMarket(4, SELL, 1));
+
+    const Spread& spread = matcher.getSpread();
+
+    // Expect 2 matches. No cancellations expected
+    EXPECT_EQ(2, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+
+    // check spread
+    EXPECT_FALSE(spread.bidsMissing);
+    EXPECT_FALSE(spread.asksMissing);
+
     EXPECT_EQ(100, spread.highestBid);
     EXPECT_EQ(110, spread.lowestAsk);
-    
-    auto depth = matcher.getDepth();
-    ASSERT_FALSE(depth.bidBins.empty());
-    ASSERT_FALSE(depth.askBins.empty());
 
-    // Cancel the buy order
-    matcher.cancelOrder(buy.ordId);
+    // Check matches
+    EXPECT_EQ(3, matcher.notifier->matches[0].buyer.ordId);
+    EXPECT_EQ(2, matcher.notifier->matches[0].seller.ordId);
+    EXPECT_EQ(1, matcher.notifier->matches[0].qty);
+    EXPECT_EQ(110, matcher.notifier->matches[0].price);
 
-    // Verify visibility without matching (lazy cleanup hasn't run yet)
-    
-    // Spread should now have missing bids (or next best bid, here empty)
-    spread = matcher.getSpread();
-    EXPECT_TRUE(spread.bidsMissing);
+    EXPECT_EQ(1, matcher.notifier->matches[1].buyer.ordId);
+    EXPECT_EQ(4, matcher.notifier->matches[1].seller.ordId);
+    EXPECT_EQ(1, matcher.notifier->matches[1].qty);
+    EXPECT_EQ(100, matcher.notifier->matches[1].price);
+}
+
+TEST_F(MatcherTest, SpreadCrossed_PartialFill_BUY_LIMIT_PlacedOnBook_StateIsCorrect){
+    // Arrange & Act
+    matcher.placeOrder(makeLimit(1, SELL, 110, 1));
+    matcher.placeOrder(makeLimit(2, SELL, 101, 2));
+    matcher.placeOrder(makeLimit(3, SELL, 100, 2));
+
+    matcher.placeOrder(makeLimit(4, BUY, 95, 2));
+    matcher.placeOrder(makeLimit(5, BUY, 94, 2));
+    matcher.placeOrder(makeLimit(6, BUY, 90, 1));
+
+    matcher.placeOrder(makeLimit(7, BUY, 105, 5));
+
+    const Spread& spread = matcher.getSpread();
+
+    // Expect 2 matches. No cancellations expected
+    EXPECT_EQ(2, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+
+    // check spread
+    EXPECT_FALSE(spread.bidsMissing);
     EXPECT_FALSE(spread.asksMissing);
+
+    EXPECT_EQ(105, spread.highestBid);
     EXPECT_EQ(110, spread.lowestAsk);
 
-    // Depth should be empty on the bid side
-    depth = matcher.getDepth();
-    EXPECT_TRUE(depth.bidBins.empty());
-    ASSERT_FALSE(depth.askBins.empty());
-    EXPECT_EQ(10, depth.askBins[0].totalQty);
+    // Check matches
+    EXPECT_EQ(7, matcher.notifier->matches[0].buyer.ordId);
+    EXPECT_EQ(3, matcher.notifier->matches[0].seller.ordId);
+    EXPECT_EQ(2, matcher.notifier->matches[0].qty);
+    EXPECT_EQ(100, matcher.notifier->matches[0].price);
 
-    // Cancel the sell order
-    matcher.cancelOrder(sell.ordId);
+    EXPECT_EQ(7, matcher.notifier->matches[1].buyer.ordId);
+    EXPECT_EQ(2, matcher.notifier->matches[1].seller.ordId);
+    EXPECT_EQ(2, matcher.notifier->matches[1].qty);
+    EXPECT_EQ(101, matcher.notifier->matches[1].price);
+}
 
-    spread = matcher.getSpread();
+TEST_F(MatcherTest, SpreadCrossed_PartialFill_SELL_LIMIT_PlacedOnBook_StateIsCorrect){
+    // Arrange & Act
+    matcher.placeOrder(makeLimit(4, SELL, 105, 2));
+    matcher.placeOrder(makeLimit(5, SELL, 106, 2));
+    matcher.placeOrder(makeLimit(6, SELL, 110, 1));
+
+    matcher.placeOrder(makeLimit(1, BUY, 90, 1));
+    matcher.placeOrder(makeLimit(2, BUY, 99, 2));
+    matcher.placeOrder(makeLimit(3, BUY, 100, 2));
+
+    matcher.placeOrder(makeLimit(7, SELL, 95, 5));
+
+    const Spread& spread = matcher.getSpread();
+
+    // Expect 2 matches. No cancellations expected
+    EXPECT_EQ(2, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+
+    // check spread
+    EXPECT_FALSE(spread.bidsMissing);
+    EXPECT_FALSE(spread.asksMissing);
+
+    EXPECT_EQ(90, spread.highestBid);
+    EXPECT_EQ(95, spread.lowestAsk);
+
+    // Check matches
+    EXPECT_EQ(3, matcher.notifier->matches[0].buyer.ordId);
+    EXPECT_EQ(7, matcher.notifier->matches[0].seller.ordId);
+    EXPECT_EQ(2, matcher.notifier->matches[0].qty);
+    EXPECT_EQ(100, matcher.notifier->matches[0].price);
+
+    EXPECT_EQ(2, matcher.notifier->matches[1].buyer.ordId);
+    EXPECT_EQ(7, matcher.notifier->matches[1].seller.ordId);
+    EXPECT_EQ(2, matcher.notifier->matches[1].qty);
+    EXPECT_EQ(99, matcher.notifier->matches[1].price);
+}
+
+TEST_F(MatcherTest, StopsActivateOnPriceSignal){
+
+    // Place BUY LIMITS and a SELL STOP with a trigger price in the middle
+    matcher.placeOrder(makeLimit(1, BUY, 115, 1));
+    matcher.placeOrder(makeLimit(2, BUY, 111, 1));
+    matcher.placeOrder(makeLimit(3, BUY, 110, 1));
+    matcher.placeOrder(makeLimit(4, BUY, 105, 1));
+    matcher.placeOrder(makeStop(5, SELL, 110, 1));
+
+    // No matches expected initially
+    EXPECT_EQ(0, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+    EXPECT_FALSE(matcher.getSpread().bidsMissing);
+    EXPECT_TRUE(matcher.getSpread().asksMissing);
+    EXPECT_EQ(115, matcher.getSpread().highestBid);
+
+    // Take the BUY limit @115. 1 match expected, trigger price IS NOT reached
+    matcher.placeOrder(makeMarket(6, SELL, 1));
+    EXPECT_EQ(1, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+    EXPECT_FALSE(matcher.getSpread().bidsMissing);
+    EXPECT_TRUE(matcher.getSpread().asksMissing);
+    EXPECT_EQ(111, matcher.getSpread().highestBid);
+
+    // Take the BUY limit @111 AND @110. another match expected, trigger price IS reached
+    matcher.placeOrder(makeMarket(7, SELL, 1));
+    EXPECT_EQ(3, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+    EXPECT_FALSE(matcher.getSpread().bidsMissing);
+    EXPECT_TRUE(matcher.getSpread().asksMissing);
+    EXPECT_EQ(105, matcher.getSpread().highestBid);
+
+    // Take the BUY limit @105. Book should be empty afterwards
+    matcher.placeOrder(makeMarket(8, SELL, 1));
+    EXPECT_EQ(4, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+    EXPECT_TRUE(matcher.getSpread().bidsMissing);
+    EXPECT_TRUE(matcher.getSpread().asksMissing);
+
+    // Match 0: first market sell takes the best bid @115
+    EXPECT_EQ(1,   matcher.notifier->matches[0].buyer.ordId);
+    EXPECT_EQ(6,   matcher.notifier->matches[0].seller.ordId);
+    EXPECT_EQ(1,   matcher.notifier->matches[0].qty);
+    EXPECT_EQ(115, matcher.notifier->matches[0].price);
+
+    // Match 1: second market sell takes bid @111, activating the dormant stop at 110
+    EXPECT_EQ(2,   matcher.notifier->matches[1].buyer.ordId);
+    EXPECT_EQ(7,   matcher.notifier->matches[1].seller.ordId);
+    EXPECT_EQ(1,   matcher.notifier->matches[1].qty);
+    EXPECT_EQ(111, matcher.notifier->matches[1].price);
+
+    // Match 2: the now-active stop market-sells into the bid @110
+    EXPECT_EQ(3,   matcher.notifier->matches[2].buyer.ordId);
+    EXPECT_EQ(5,   matcher.notifier->matches[2].seller.ordId);
+    EXPECT_EQ(1,   matcher.notifier->matches[2].qty);
+    EXPECT_EQ(110, matcher.notifier->matches[2].price);
+
+    // Match 3: third market sell takes the remaining bid @105
+    EXPECT_EQ(4,   matcher.notifier->matches[3].buyer.ordId);
+    EXPECT_EQ(8,   matcher.notifier->matches[3].seller.ordId);
+    EXPECT_EQ(1,   matcher.notifier->matches[3].qty);
+    EXPECT_EQ(105, matcher.notifier->matches[3].price);
+}
+
+TEST_F(MatcherTest, BuyStopLimitActivatesOnPriceSignal){
+
+    // Place SELL LIMITS at 100, 105, 110, 115
+    // and a dormant BUY STOP LIMIT (stopPrice=105, limitPrice=110)
+    // The stop is dormant because stopPrice(105) > lowestAsk(100)
+    matcher.placeOrder(makeLimit(1, SELL, 100, 1));
+    matcher.placeOrder(makeLimit(2, SELL, 105, 1));
+    matcher.placeOrder(makeLimit(3, SELL, 110, 1));
+    matcher.placeOrder(makeLimit(4, SELL, 115, 1));
+    matcher.placeOrder(makeStopLimit(5, BUY, 110, 105, 1));
+
+    // No matches expected initially
+    EXPECT_EQ(0, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+    EXPECT_TRUE(matcher.getSpread().bidsMissing);
+    EXPECT_FALSE(matcher.getSpread().asksMissing);
+    EXPECT_EQ(100, matcher.getSpread().lowestAsk);
+
+    // Take the SELL limit @100. 2 matches expected: the market buy fills @100,
+    // which sweeps through bid@105, activating the dormant stop.
+    // The now-active stop limit immediately takes the ask @105 (within its limit of 110).
+    matcher.placeOrder(makeMarket(6, BUY, 1));
+    EXPECT_EQ(2, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+    EXPECT_TRUE(matcher.getSpread().bidsMissing);
+    EXPECT_FALSE(matcher.getSpread().asksMissing);
+    EXPECT_EQ(110, matcher.getSpread().lowestAsk);
+
+    // Take the SELL limit @110. 1 more match expected, trigger price is NOT reached again
+    matcher.placeOrder(makeMarket(7, BUY, 1));
+    EXPECT_EQ(3, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+    EXPECT_TRUE(matcher.getSpread().bidsMissing);
+    EXPECT_FALSE(matcher.getSpread().asksMissing);
+    EXPECT_EQ(115, matcher.getSpread().lowestAsk);
+
+    // Take the SELL limit @115. Book should be empty afterwards
+    matcher.placeOrder(makeMarket(8, BUY, 1));
+    EXPECT_EQ(4, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+    EXPECT_TRUE(matcher.getSpread().bidsMissing);
+    EXPECT_TRUE(matcher.getSpread().asksMissing);
+
+    // Match 0: first market buy takes the best ask @100
+    EXPECT_EQ(6,   matcher.notifier->matches[0].buyer.ordId);
+    EXPECT_EQ(1,   matcher.notifier->matches[0].seller.ordId);
+    EXPECT_EQ(1,   matcher.notifier->matches[0].qty);
+    EXPECT_EQ(100, matcher.notifier->matches[0].price);
+
+    // Match 1: the now-active stop limit buys into the ask @105 (within its limit of 110)
+    EXPECT_EQ(5,   matcher.notifier->matches[1].buyer.ordId);
+    EXPECT_EQ(2,   matcher.notifier->matches[1].seller.ordId);
+    EXPECT_EQ(1,   matcher.notifier->matches[1].qty);
+    EXPECT_EQ(105, matcher.notifier->matches[1].price);
+
+    // Match 2: second market buy takes ask @110
+    EXPECT_EQ(7,   matcher.notifier->matches[2].buyer.ordId);
+    EXPECT_EQ(3,   matcher.notifier->matches[2].seller.ordId);
+    EXPECT_EQ(1,   matcher.notifier->matches[2].qty);
+    EXPECT_EQ(110, matcher.notifier->matches[2].price);
+
+    // Match 3: third market buy takes ask @115
+    EXPECT_EQ(8,   matcher.notifier->matches[3].buyer.ordId);
+    EXPECT_EQ(4,   matcher.notifier->matches[3].seller.ordId);
+    EXPECT_EQ(1,   matcher.notifier->matches[3].qty);
+    EXPECT_EQ(115, matcher.notifier->matches[3].price);
+}
+
+TEST_F(MatcherTest, StopChainReaction_ActivatedStopTriggersAnotherStop){
+
+    // Setup: BUY LIMITS descending, two dormant SELL STOPs at intermediate prices.
+    // Stop A (stopPrice=115) activates when highestBid falls to 115.
+    // Stop B (stopPrice=105) activates when highestBid falls to 105.
+    // Stop A's activation should drive price down far enough to trigger Stop B.
+    matcher.placeOrder(makeLimit(1, BUY, 120, 1));
+    matcher.placeOrder(makeLimit(2, BUY, 110, 1));
+    matcher.placeOrder(makeLimit(3, BUY, 100, 1));
+    matcher.placeOrder(makeLimit(4, BUY,  90, 1));
+    matcher.placeOrder(makeStop(5, SELL, 115, 1)); // Stop A — dormant: 115 < highestBid(120)
+    matcher.placeOrder(makeStop(6, SELL, 105, 1)); // Stop B — dormant: 105 < highestBid(120)
+
+    // No matches expected initially
+    EXPECT_EQ(0, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+    EXPECT_FALSE(matcher.getSpread().bidsMissing);
+    EXPECT_TRUE(matcher.getSpread().asksMissing);
+    EXPECT_EQ(120, matcher.getSpread().highestBid);
+
+    // Market SELL #7 takes bid@120. While scanning, Stop A's bin@115 is hit → activates.
+    // Stop A (now a market sell) takes bid@110. While scanning, Stop B's bin@105 is hit → activates.
+    // Stop B (now a market sell) takes bid@100.
+    // All three happen in a single placeOrder call via the while loop.
+    matcher.placeOrder(makeMarket(7, SELL, 1));
+    EXPECT_EQ(3, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+    EXPECT_FALSE(matcher.getSpread().bidsMissing);
+    EXPECT_TRUE(matcher.getSpread().asksMissing);
+    EXPECT_EQ(90, matcher.getSpread().highestBid);
+
+    // Final market sell drains the book
+    matcher.placeOrder(makeMarket(8, SELL, 1));
+    EXPECT_EQ(4, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+    EXPECT_TRUE(matcher.getSpread().bidsMissing);
+    EXPECT_TRUE(matcher.getSpread().asksMissing);
+
+    // Match 0: market sell #7 takes best bid @120
+    EXPECT_EQ(1,   matcher.notifier->matches[0].buyer.ordId);
+    EXPECT_EQ(7,   matcher.notifier->matches[0].seller.ordId);
+    EXPECT_EQ(1,   matcher.notifier->matches[0].qty);
+    EXPECT_EQ(120, matcher.notifier->matches[0].price);
+
+    // Match 1: Stop A activates, market-sells into bid @110
+    EXPECT_EQ(2,   matcher.notifier->matches[1].buyer.ordId);
+    EXPECT_EQ(5,   matcher.notifier->matches[1].seller.ordId);
+    EXPECT_EQ(1,   matcher.notifier->matches[1].qty);
+    EXPECT_EQ(110, matcher.notifier->matches[1].price);
+
+    // Match 2: Stop B activates (triggered by Stop A's fill), market-sells into bid @100
+    EXPECT_EQ(3,   matcher.notifier->matches[2].buyer.ordId);
+    EXPECT_EQ(6,   matcher.notifier->matches[2].seller.ordId);
+    EXPECT_EQ(1,   matcher.notifier->matches[2].qty);
+    EXPECT_EQ(100, matcher.notifier->matches[2].price);
+
+    // Match 3: market sell #8 takes the last remaining bid @90
+    EXPECT_EQ(4,   matcher.notifier->matches[3].buyer.ordId);
+    EXPECT_EQ(8,   matcher.notifier->matches[3].seller.ordId);
+    EXPECT_EQ(1,   matcher.notifier->matches[3].qty);
+    EXPECT_EQ(90,  matcher.notifier->matches[3].price);
+}
+
+TEST_F(MatcherTest, MarketAndActivatedStop_NoLiquidity_AreCancelled){
+
+    // One bid exists. A dormant SELL STOP sits below it at stopPrice=95.
+    matcher.placeOrder(makeLimit(1, BUY, 100, 1));
+    matcher.placeOrder(makeStop(2, SELL, 95, 1)); // dormant: 95 < highestBid(100)
+
+    EXPECT_EQ(0, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+
+    // Market SELL #3 drains the only bid @100. While scanning downward, the
+    // stop bin@95 is reached — stop #2 is activated. After the SELL market order
+    // completes, the while loop fires stop #2 as a market sell, but there are
+    // no bids left — stop #2 is cancelled.
+    matcher.placeOrder(makeMarket(3, SELL, 1));
+    EXPECT_EQ(1, matcher.notifier->matches.size());
+    EXPECT_EQ(1, matcher.notifier->cancellations.size());
+    EXPECT_TRUE(matcher.getSpread().bidsMissing);
+    EXPECT_TRUE(matcher.getSpread().asksMissing);
+
+    EXPECT_EQ(1,   matcher.notifier->matches[0].buyer.ordId);
+    EXPECT_EQ(3,   matcher.notifier->matches[0].seller.ordId);
+    EXPECT_EQ(1,   matcher.notifier->matches[0].qty);
+    EXPECT_EQ(100, matcher.notifier->matches[0].price);
+
+    // Stop #2 activated but found no bids — cancelled
+    EXPECT_EQ(2, matcher.notifier->cancellations[0]);
+
+    // Market BUY #4 placed on an empty book — no asks exist, cancelled immediately
+    matcher.placeOrder(makeMarket(4, BUY, 1));
+    EXPECT_EQ(1, matcher.notifier->matches.size());
+    EXPECT_EQ(2, matcher.notifier->cancellations.size());
+    EXPECT_TRUE(matcher.getSpread().bidsMissing);
+    EXPECT_TRUE(matcher.getSpread().asksMissing);
+
+    EXPECT_EQ(4, matcher.notifier->cancellations[1]);
+}
+
+TEST_F(MatcherTest, GetDepth_NoMatchReflectsAllLevels){
+    // Place 3 bid levels and 3 ask levels with no overlap
+    matcher.placeOrder(makeLimit(1, BUY,  90, 1));
+    matcher.placeOrder(makeLimit(2, BUY,  95, 2));
+    matcher.placeOrder(makeLimit(3, BUY, 100, 3));
+    matcher.placeOrder(makeLimit(4, SELL, 110, 1));
+    matcher.placeOrder(makeLimit(5, SELL, 115, 2));
+    matcher.placeOrder(makeLimit(6, SELL, 120, 3));
+
+    const Depth depth = matcher.getDepth();
+
+    // Bids: highest price first
+    ASSERT_EQ(3, depth.bidBins.size());
+    EXPECT_EQ(100, depth.bidBins[0].price);
+    EXPECT_EQ(3,   depth.bidBins[0].totalQty);
+    EXPECT_EQ(95,  depth.bidBins[1].price);
+    EXPECT_EQ(2,   depth.bidBins[1].totalQty);
+    EXPECT_EQ(90,  depth.bidBins[2].price);
+    EXPECT_EQ(1,   depth.bidBins[2].totalQty);
+
+    // Asks: lowest price first
+    ASSERT_EQ(3, depth.askBins.size());
+    EXPECT_EQ(110, depth.askBins[0].price);
+    EXPECT_EQ(1,   depth.askBins[0].totalQty);
+    EXPECT_EQ(115, depth.askBins[1].price);
+    EXPECT_EQ(2,   depth.askBins[1].totalQty);
+    EXPECT_EQ(120, depth.askBins[2].price);
+    EXPECT_EQ(3,   depth.askBins[2].totalQty);
+}
+
+TEST_F(MatcherTest, GetDepth_DrainedLevelIsExcluded){
+    // Three ask levels; a market buy will fully consume the best ask (110)
+    matcher.placeOrder(makeLimit(1, SELL, 110, 2));
+    matcher.placeOrder(makeLimit(2, SELL, 115, 2));
+    matcher.placeOrder(makeLimit(3, BUY,  100, 2));
+
+    matcher.placeOrder(makeMarket(4, BUY, 2)); // drains ask@110 entirely
+
+    const Depth depth = matcher.getDepth();
+
+    // ask@110 is gone; only ask@115 remains
+    ASSERT_EQ(1, depth.askBins.size());
+    EXPECT_EQ(115, depth.askBins[0].price);
+    EXPECT_EQ(2,   depth.askBins[0].totalQty);
+
+    // bid@100 is still present
+    ASSERT_EQ(1, depth.bidBins.size());
+    EXPECT_EQ(100, depth.bidBins[0].price);
+    EXPECT_EQ(2,   depth.bidBins[0].totalQty);
+}
+
+TEST_F(MatcherTest, CancelledOrders_ReduceBinQty_BothSides){
+    // Place two orders at each price level on both sides
+    matcher.placeOrder(makeLimit(1, BUY,  100, 3));
+    matcher.placeOrder(makeLimit(2, BUY,  100, 2)); // same bin as #1
+    matcher.placeOrder(makeLimit(3, SELL, 110, 3));
+    matcher.placeOrder(makeLimit(4, SELL, 110, 2)); // same bin as #3
+
+    // Before cancellations: bid@100 totalQty=5, ask@110 totalQty=5
+    {
+        const Depth depth = matcher.getDepth();
+        ASSERT_EQ(1, depth.bidBins.size());
+        EXPECT_EQ(100, depth.bidBins[0].price);
+        EXPECT_EQ(5,   depth.bidBins[0].totalQty);
+
+        ASSERT_EQ(1, depth.askBins.size());
+        EXPECT_EQ(110, depth.askBins[0].price);
+        EXPECT_EQ(5,   depth.askBins[0].totalQty);
+    }
+
+    // Cancel one order from each bin
+    matcher.cancelOrder(2); // removes qty 2 from bid@100
+    matcher.cancelOrder(4); // removes qty 2 from ask@110
+
+    // After cancellations: bid@100 totalQty=3, ask@110 totalQty=3
+    {
+        const Depth depth = matcher.getDepth();
+        ASSERT_EQ(1, depth.bidBins.size());
+        EXPECT_EQ(100, depth.bidBins[0].price);
+        EXPECT_EQ(3,   depth.bidBins[0].totalQty);
+
+        ASSERT_EQ(1, depth.askBins.size());
+        EXPECT_EQ(110, depth.askBins[0].price);
+        EXPECT_EQ(3,   depth.askBins[0].totalQty);
+    }
+}
+
+TEST_F(MatcherTest, NegativePriceLimitOrders_NoMatch_StateIsCorrect) {
+    // Arrange & Act
+    matcher.placeOrder(makeLimit(1, BUY,  -10, 1));
+    matcher.placeOrder(makeLimit(2, SELL,  -5, 1));
+
+    const Spread& spread = matcher.getSpread();
+
+    // No match: best bid (-10) < lowest ask (-5)
+    EXPECT_EQ(0, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+    //EXPECT_EQ(2, matcher.notifier->orderRegistery.size());
+
+    EXPECT_FALSE(spread.bidsMissing);
+    EXPECT_FALSE(spread.asksMissing);
+    EXPECT_EQ(-10, spread.highestBid);
+    EXPECT_EQ(-5,  spread.lowestAsk);
+}
+
+TEST_F(MatcherTest, NegativePriceLimitOrders_SpreadCrossed_Matches) {
+    // Arrange & Act: bid crosses above ask (both negative)
+    matcher.placeOrder(makeLimit(1, BUY,  -5, 1));
+    matcher.placeOrder(makeLimit(2, SELL, -10, 1));
+
+    const Spread& spread = matcher.getSpread();
+
+    // One match expected at the resting bid price (-5)
+    EXPECT_EQ(1, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+
+    EXPECT_TRUE(spread.bidsMissing);
     EXPECT_TRUE(spread.asksMissing);
 
-    depth = matcher.getDepth();
-    EXPECT_TRUE(depth.askBins.empty());
+    EXPECT_EQ(1,   matcher.notifier->matches[0].buyer.ordId);
+    EXPECT_EQ(2,   matcher.notifier->matches[0].seller.ordId);
+    EXPECT_EQ(1,   matcher.notifier->matches[0].qty);
+    EXPECT_EQ(-5, matcher.notifier->matches[0].price);
+}
+
+TEST_F(MatcherTest, CancelOrder_NotOnBook_BookUnchanged){
+    // Arrange
+    matcher.placeOrder(makeLimit(1, BUY,  100, 1));
+    matcher.placeOrder(makeLimit(2, SELL, 110, 1));
+
+    // Act: cancel an ordId that was never placed
+    matcher.cancelOrder(99);
+
+    const Spread& spread = matcher.getSpread();
+
+    // Book should be unchanged
+    EXPECT_EQ(0, matcher.notifier->matches.size());
+    EXPECT_EQ(0, matcher.notifier->cancellations.size());
+    //EXPECT_EQ(2, matcher.notifier->orderRegistery.size());
+
+    EXPECT_FALSE(spread.bidsMissing);
+    EXPECT_FALSE(spread.asksMissing);
+    EXPECT_EQ(100, spread.highestBid);
+    EXPECT_EQ(110, spread.lowestAsk);
 }
