@@ -25,7 +25,6 @@ class LimitsBin{
         std::unordered_set<std::uint64_t> cancelledIds; // TODO: consider using pool allocator here
         std::deque<Order> entries;
         //void notifyMatch(std::int64_t makeId, std::int64_t takeId, std::uint32_t transferQty);
-        bool findEraseCancelledLimit(std::int64_t orderId);
 
     public:
 

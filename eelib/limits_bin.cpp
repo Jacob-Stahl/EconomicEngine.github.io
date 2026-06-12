@@ -9,8 +9,8 @@ void LimitsBin::take(Order& takeEntry, std::unordered_map<std::int64_t, Order>& 
     while (takeEntry.qty > 0 && !entries.empty()) {
         auto& makeEntry = entries.front();
 
-        // Skip and remove cancelled orders;
-        if(findEraseCancelledLimit(makeEntry.ordId)){
+        // Skip and remove, if this order is cancelled
+        if(cancelledIds.erase(makeEntry.ordId) > 0){
             entries.pop_front();
             continue;
         }
@@ -41,10 +41,6 @@ std::uint32_t LimitsBin::totalQty(){
     }
 
     return total;
-}
-
-inline bool LimitsBin::findEraseCancelledLimit(std::int64_t ordId){
-    return cancelledIds.erase(ordId) > 0;
 }
 
 void LimitsBin::cancelLimit(std::int64_t ordId){
