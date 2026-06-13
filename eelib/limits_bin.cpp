@@ -29,6 +29,10 @@ void LimitsBin::take(Order& takeEntry, std::unordered_map<std::int64_t, Order>& 
             entries.pop_front();
         }
     };
+
+    if (takeEntry.qty == 0){
+        orderRegistry.erase(takeEntry.ordId);
+    }
 }
 
 std::uint32_t LimitsBin::totalQty(){

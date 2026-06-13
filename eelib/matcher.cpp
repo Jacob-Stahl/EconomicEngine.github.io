@@ -138,10 +138,10 @@ void Matcher::takeSells(Order& buyOrder, std::int32_t maxLimitPrice){
             limitsBin.take(buyOrder, orderRegistry); // first fill the order
         }
 
-        orderRegistry.erase(buyOrder.ordId);
         if(limitsBin.isEmpty()){
             continue; // then find a non-empty bin with the best asks
         }
+        
         spread.asksMissing = false;
         spread.lowestAsk = price;
         return; // return after updating the spread
@@ -161,11 +161,11 @@ void Matcher::takeBuys(Order& sellOrder, std::int32_t minLimitPrice){
         if(limitsBin.hasDormantStops()){
             limitsBin.moveAllStopsToActive(activeSellStops);
         }
+
         if(sellOrder.qty > 0 && price >= minLimitPrice){
             limitsBin.take(sellOrder, orderRegistry);
         }
 
-        orderRegistry.erase(sellOrder.ordId);
         if(limitsBin.isEmpty()){
             continue;
         }
