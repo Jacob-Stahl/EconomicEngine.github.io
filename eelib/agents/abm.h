@@ -46,6 +46,9 @@ class ABM {
     /// @brief Collect matches from all matchers and dispatch to agents.
     void routeMatches();
 
+    /// @brief Clear cancellations in all matcher notifiers
+    void clearCancellations();
+
     void observe();
     void removeAgents(const std::vector<size_t>& agentsToRemove);
     void runTickCallbacks();

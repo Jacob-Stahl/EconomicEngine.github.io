@@ -62,6 +62,12 @@ void ABM::cancelOrderWithAllMatchers(std::int64_t doomedOrderId) {
     }
 }
 
+void ABM::clearCancellations(){
+    for (auto& [asset, matcher] : orderMatchers){
+        matcher.notifier->cancellations.clear();
+    }
+}
+
 void ABM::simStep() {
 
     ++tickCounter;
@@ -96,6 +102,7 @@ void ABM::simStep() {
         }
     }
     routeMatches();
+    clearCancellations();
     observe();
     runTickCallbacks();
 }
