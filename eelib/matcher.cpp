@@ -84,6 +84,9 @@ void Matcher::placeMarket(Order& marketOrd, Side side){
     if(marketOrd.qty > 0){
         notifier->cancelled(marketOrd.ordId);
     }
+
+    // Market order do not stay on the book.
+    orderRegistry.erase(marketOrd.ordId);
 }
 
 // https://www.interactivebrokers.com.hk/php/webhelp/Making_Trades/trigger.htm
@@ -126,7 +129,7 @@ inline LimitsBin& Matcher::getLimitsBin(std::int32_t price, std::vector<LimitsBi
 void Matcher::takeSells(Order& buyOrder, std::int32_t maxLimitPrice){
     size_t startIdx = priceToBinIdx(spread.lowestAsk);
 
-    for(auto binIdx = startIdx; binIdx < sellLimitBins.size(); ++binIdx){
+    for(auto binIdx = minPrice; binIdx < sellLimitBins.size(); ++binIdx){
         std::int32_t price = binIdxToPrice(binIdx);
         auto&& limitsBin = sellLimitBins[binIdx];
 
