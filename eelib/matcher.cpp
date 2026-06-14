@@ -21,6 +21,7 @@ void Matcher::placeOrder(Order order){
     }
 
     // If this order activates any stops, place them on the book
+    // Stops can trigger a chain reaction. this is why the loop is required
     while(!activeBuyStops.empty() || !activeSellStops.empty()){
         auto sellBatch = std::move(activeSellStops); // activeSellStops is now empty
         for(auto& stopEntry : sellBatch){
@@ -129,7 +130,7 @@ inline LimitsBin& Matcher::getLimitsBin(std::int32_t price, std::vector<LimitsBi
 void Matcher::takeSells(Order& buyOrder, std::int32_t maxLimitPrice){
     size_t startIdx = priceToBinIdx(spread.lowestAsk);
 
-    for(auto binIdx = minPrice; binIdx < sellLimitBins.size(); ++binIdx){
+    for(auto binIdx = startIdx; binIdx < sellLimitBins.size(); ++binIdx){
         std::int32_t price = binIdxToPrice(binIdx);
         auto&& limitsBin = sellLimitBins[binIdx];
 
