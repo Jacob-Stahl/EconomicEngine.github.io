@@ -29,7 +29,6 @@ class OrderFactory {
     std::string asset;
 
 private:
-
     Side pickSide(){
         size_t idx = sideDist(gen);
         return static_cast<Side>(idx + 1);
@@ -40,7 +39,6 @@ private:
         return static_cast<OrdType>(idx + 1);
     }
     
-
 public:
     OrderFactory(const std::string& asset_ = "TEST")
         : asset(asset_),
