@@ -17,45 +17,51 @@ int main(){
     benchmarkMatcher();
 }
 
-// weighted picker: weights.size() == number of enum values (ordered by underlying value starting at 1)
-template<typename Enum>
-Enum weighted_random_enum(const std::vector<double>& weights) {
-    static_assert(std::is_enum_v<Enum>);
-    static std::mt19937 rng{std::random_device{}()};
-    std::discrete_distribution<size_t> dist(weights.begin(), weights.end());
-    size_t idx = dist(rng);
-    using U = std::underlying_type_t<Enum>;
-    return static_cast<Enum>(static_cast<U>(idx + 1)); // +1 because enums start at 1
-}
-
 class OrderFactory {
     long currentId = 1;
     std::mt19937 gen;
     std::uniform_int_distribution<unsigned int> qtyDist;
     std::normal_distribution<double> priceDist;
     std::normal_distribution<double> stopOffsetDist;
+    std::discrete_distribution<size_t> sideDist;
+    std::discrete_distribution<size_t> typeDist;
     double spreadFactor = 100.0;
     std::string asset;
+
+private:
+
+    Side pickSide(){
+        size_t idx = sideDist(gen);
+        return static_cast<Side>(idx + 1);
+    }
+
+    OrdType pickOrdType(){
+        size_t idx = typeDist(gen);
+        return static_cast<OrdType>(idx + 1);
+    }
+    
 
 public:
     OrderFactory(const std::string& asset_ = "TEST")
         : asset(asset_),
           qtyDist(1, 100),
           priceDist(1000.0, 100.0),
-          stopOffsetDist(30.0, 10.0)
+          stopOffsetDist(30.0, 10.0),
+          sideDist({1.0, 1.0}),
+          typeDist({
+            0.1,  // MARKET
+            1.0, // LIMIT
+            0.0,  // STOP
+            0.0,  // STOPLIMIT
+        })
     {
         std::random_device rd;
         gen = std::mt19937(rd());
     }
 
     Order randomOrder() {
-        Side side = weighted_random_enum<Side>({1.0, 1.0});
-        OrdType type = weighted_random_enum<OrdType>({
-            0.1,  // MARKET
-            1.0, // LIMIT
-            0.1,  // STOP
-            0.1,  // STOPLIMIT
-        });
+        Side side = pickSide(); //weighted_random_enum<Side>({1.0, 1.0});
+        OrdType type = pickOrdType();
 
         unsigned int qty = qtyDist(gen);
         double basePrice = priceDist(gen);
