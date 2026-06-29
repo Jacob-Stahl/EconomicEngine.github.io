@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 4.3)
 project(eelib VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 26)
