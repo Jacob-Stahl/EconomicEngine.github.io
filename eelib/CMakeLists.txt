@@ -19,8 +19,6 @@ set(EELIB_SOURCES
 		agents/person.cpp
 		agents/abm.cpp
 		agents/agent_manager.cpp
-
-
 )
 
 add_library(eelib STATIC ${EELIB_SOURCES})
