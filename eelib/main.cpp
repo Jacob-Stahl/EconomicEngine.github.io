@@ -6,15 +6,21 @@
 #include <unordered_map>
 #include <type_traits>
 #include <string>
+#include <sstream>
 #include <vector>
 
 #include "order.h"
 #include "matcher.h"
+#include "agents/abm.h"
+#include "agents/consumer.h"
+#include "agents/producer.h"
 
 void benchmarkMatcher();
 
+void benchmarkABM();
+
 int main(){
-    benchmarkMatcher();
+    benchmarkABM();
 }
 
 class OrderFactory {
@@ -151,4 +157,66 @@ void benchmarkMatcher(){
     std::cout << "Done!\n"
               << "Matches found: " << matcher.notifier->matches.size() << "\n"
               << "Cancellations: " << matcher.notifier->cancellations.size() << "\n";
+}
+
+void benchmarkABM() {
+
+    ABM abm{};
+
+    // Add a producer
+    auto producerState = std::make_shared<ProducerState>();
+    producerState->asset = "FOOD";
+    producerState->preferedPrice = 50;
+    producerState->qtyPerTick = 1;
+
+    abm.addAgent<Producer>(producerState);
+
+    // Add some consumers
+    const int numConsumers = 1000;
+    for (int i = 0; i < numConsumers; ++i) {
+        auto consumerState = std::make_shared<ConsumerState>();
+        consumerState->asset = "FOOD";
+        consumerState->maxPrice = 100;
+        consumerState->hungerDelay = 0;
+
+        abm.addAgent<Consumer>(consumerState);
+    }
+
+    // Run for 500 iterations
+    const int numIterations = 500;
+    for (int i = 0; i < numIterations; ++i) {
+        abm.simStep();
+
+        const auto& observation = abm.getLatestObservation();
+        const auto foodIt = observation.assetObservations.find("FOOD");
+
+        std::ostringstream line;
+        line << "FOOD bid: ";
+
+        if (foodIt == observation.assetObservations.end() || foodIt->second.spread.bidsMissing) {
+            line << "-";
+        } else {
+            line << foodIt->second.spread.highestBid;
+        }
+
+        line << " | ask: ";
+        if (foodIt == observation.assetObservations.end() || foodIt->second.spread.asksMissing) {
+            line << "-";
+        } else {
+            line << foodIt->second.spread.lowestAsk;
+        }
+
+        line << " | spread: ";
+        if (foodIt == observation.assetObservations.end()
+            || foodIt->second.spread.bidsMissing
+            || foodIt->second.spread.asksMissing) {
+            line << "-";
+        } else {
+            line << (foodIt->second.spread.lowestAsk - foodIt->second.spread.highestBid);
+        }
+
+        std::cout << '\r' << std::left << std::setw(40) << line.str() << std::flush;
+    }
+
+    std::cout << '\n';
 }
