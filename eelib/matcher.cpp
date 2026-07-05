@@ -21,7 +21,7 @@ void Matcher::placeOrder(Order order){
     }
 
     // If this order activates any stops, place them on the book
-    // Stops can trigger a chain reaction. this is why the loop is required
+    // Stops can trigger a chain reaction, requiring a loop
     while(!activeBuyStops.empty() || !activeSellStops.empty()){
         auto sellBatch = std::move(activeSellStops); // activeSellStops is now empty
         for(auto& stopEntry : sellBatch){
@@ -127,6 +127,39 @@ inline LimitsBin& Matcher::getLimitsBin(std::int32_t price, std::vector<LimitsBi
     return bins[priceIdx];
 }
 
+void Matcher::refreshHighestBid(size_t startIdx){
+    if(buyLimitBins.empty()){
+        spread.bidsMissing = true;
+        return;
+    }
+
+    for(size_t binIdx = std::min(startIdx, buyLimitBins.size() - 1) + 1; binIdx-- > 0;){
+        if(buyLimitBins[binIdx].totalQty() == 0){
+            continue;
+        }
+
+        spread.bidsMissing = false;
+        spread.highestBid = binIdxToPrice(binIdx);
+        return;
+    }
+
+    spread.bidsMissing = true;
+}
+
+void Matcher::refreshLowestAsk(size_t startIdx){
+    for(size_t binIdx = startIdx; binIdx < sellLimitBins.size(); ++binIdx){
+        if(sellLimitBins[binIdx].totalQty() == 0){
+            continue;
+        }
+
+        spread.asksMissing = false;
+        spread.lowestAsk = binIdxToPrice(binIdx);
+        return;
+    }
+
+    spread.asksMissing = true;
+}
+
 void Matcher::takeSells(Order& buyOrder, std::int32_t maxLimitPrice){
     size_t startIdx = priceToBinIdx(spread.lowestAsk);
 
@@ -158,7 +191,7 @@ void Matcher::takeSells(Order& buyOrder, std::int32_t maxLimitPrice){
 void Matcher::takeBuys(Order& sellOrder, std::int32_t minLimitPrice){
     size_t startIdx = priceToBinIdx(spread.highestBid);
 
-    for(auto binIdx = startIdx; binIdx != 0; --binIdx){
+    for(size_t binIdx = startIdx + 1; binIdx-- > 0;){
         std::int32_t price = binIdxToPrice(binIdx);
         auto&& limitsBin = buyLimitBins[binIdx];
 
@@ -189,28 +222,52 @@ void Matcher::cancelOrder(std::int64_t ordId){
     }
     const Order& doomedOrder = it->second;
 
-    // Cancel Limits
-    LimitsBin& bin = doomedOrder.side == BUY ? 
-        buyLimitBins.at(priceToBinIdx(doomedOrder.price)):
-        sellLimitBins.at(priceToBinIdx(doomedOrder.price));
-    bin.cancelLimit(ordId);
+
+    // If this is a STOP or STOPLIMIT order, find the correct bin cancel the dormant stop entry.
+    if(doomedOrder.type == STOP || doomedOrder.type == STOPLIMIT){
+        LimitsBin& bin = doomedOrder.side == BUY ?
+            sellLimitBins.at(priceToBinIdx(doomedOrder.stopPrice)) :
+            buyLimitBins.at(priceToBinIdx(doomedOrder.stopPrice));
+
+        if(bin.cancelStop(ordId)){
+            orderRegistry.erase(it);
+            return;
+        }
+    }
+
+    // If this is a LIMIT or STOPLIMIT, find the correct bin and cancel the limit entry
+    if(doomedOrder.type == LIMIT || doomedOrder.type == STOPLIMIT){
+        LimitsBin& bin = doomedOrder.side == BUY ?
+            buyLimitBins.at(priceToBinIdx(doomedOrder.price)) :
+            sellLimitBins.at(priceToBinIdx(doomedOrder.price));
+
+        if(!bin.cancelLimit(ordId)){
+            return;
+        }
+
+        // Refresh the spread since the LOB was modified
+        if(doomedOrder.side == BUY &&
+           !spread.bidsMissing &&
+           doomedOrder.price == spread.highestBid &&
+           bin.totalQty() == 0){
+            refreshHighestBid(priceToBinIdx(doomedOrder.price));
+        }
+        else if(doomedOrder.side == SELL &&
+                !spread.asksMissing &&
+                doomedOrder.price == spread.lowestAsk &&
+                bin.totalQty() == 0){
+            refreshLowestAsk(priceToBinIdx(doomedOrder.price));
+        }
+    }
 
     orderRegistry.erase(it);
-
-    // If this is a STOP order, and it was not found in active limits, check dormant stops
-    if(doomedOrder.type == STOP || doomedOrder.type == STOPLIMIT){
-        LimitsBin& stopBin = doomedOrder.side == BUY ? 
-            buyLimitBins.at(priceToBinIdx(doomedOrder.stopPrice)):
-            sellLimitBins.at(priceToBinIdx(doomedOrder.stopPrice));
-        stopBin.cancelStop(ordId);
-    }
 }
 
 const Depth Matcher::getDepth() {
     Depth depth;
 
     // Bids: highest price first
-    for (size_t binIdx = buyLimitBins.size() - 1; binIdx > 0; --binIdx) {
+    for (size_t binIdx = buyLimitBins.size(); binIdx-- > 0;) {
         auto binQty = buyLimitBins[binIdx].totalQty();
         if (binQty > 0) {
             depth.bidBins.push_back({binIdxToPrice(binIdx), binQty});

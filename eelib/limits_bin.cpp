@@ -47,20 +47,30 @@ std::uint32_t LimitsBin::totalQty(){
     return total;
 }
 
-void LimitsBin::cancelLimit(std::int64_t ordId){
-    cancelledIds.insert(ordId);
-    notifier->cancelled(ordId);
-    return;
+bool LimitsBin::cancelLimit(std::int64_t ordId){
+    for(const auto& entry : entries){
+        if(entry.ordId != ordId){
+            continue;
+        }
+
+        cancelledIds.insert(ordId);
+        notifier->cancelled(ordId);
+        return true;
+    }
+
+    return false;
 }
 
-void LimitsBin::cancelStop(std::int64_t ordId){
+bool LimitsBin::cancelStop(std::int64_t ordId){
     for(auto& stop : dormantStops){
         if(stop.entry.ordId == ordId){
             stop.isCancelled = true;
             notifier->cancelled(ordId);
-            break;
+            return true;
         }
-    } 
+    }
+
+    return false;
 }
 
 void LimitsBin::addDormantStop(const StopEntry& dormantStop){

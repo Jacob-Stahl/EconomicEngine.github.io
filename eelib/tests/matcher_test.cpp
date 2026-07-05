@@ -649,3 +649,45 @@ TEST_F(MatcherTest, CancelOrder_NotOnBook_BookUnchanged){
     EXPECT_EQ(100, spread.highestBid);
     EXPECT_EQ(110, spread.lowestAsk);
 }
+
+TEST_F(MatcherTest, CancelDormantStopLimit_DoesNotCorruptActiveLimitBin){
+    matcher.placeOrder(makeLimit(1, SELL, 100, 1));
+    matcher.placeOrder(makeStopLimit(3, BUY, 120, 110, 1));
+
+    matcher.cancelOrder(3);
+    matcher.placeOrder(makeMarket(4, BUY, 1));
+    matcher.placeOrder(makeLimit(2, BUY, 120, 2));
+    matcher.placeOrder(makeMarket(5, SELL, 1));
+
+    const Spread& spread = matcher.getSpread();
+    const Depth depth = matcher.getDepth();
+
+    EXPECT_EQ(2, matcher.notifier->matches.size());
+    EXPECT_EQ(1, matcher.notifier->cancellations.size());
+    EXPECT_FALSE(spread.bidsMissing);
+    EXPECT_TRUE(spread.asksMissing);
+    ASSERT_FALSE(depth.bidBins.empty());
+    EXPECT_EQ(120, spread.highestBid);
+    EXPECT_EQ(120, depth.bidBins[0].price);
+    EXPECT_EQ(1, depth.bidBins[0].totalQty);
+    EXPECT_EQ(3, matcher.notifier->cancellations[0]);
+}
+
+TEST_F(MatcherTest, CancelBestAsk_RefreshesSpreadBeforeBuyStopLimitPlacement){
+    matcher.placeOrder(makeLimit(1, SELL, 100, 1));
+    matcher.placeOrder(makeLimit(2, SELL, 110, 1));
+
+    matcher.cancelOrder(1);
+    matcher.placeOrder(makeStopLimit(3, BUY, 120, 105, 1));
+
+    const Spread& spread = matcher.getSpread();
+
+    EXPECT_EQ(1, matcher.notifier->matches.size());
+    EXPECT_EQ(1, matcher.notifier->cancellations.size());
+    EXPECT_TRUE(spread.bidsMissing);
+    EXPECT_TRUE(spread.asksMissing);
+    EXPECT_EQ(3, matcher.notifier->matches[0].buyer.ordId);
+    EXPECT_EQ(2, matcher.notifier->matches[0].seller.ordId);
+    EXPECT_EQ(110, matcher.notifier->matches[0].price);
+    EXPECT_EQ(1, matcher.notifier->cancellations[0]);
+}

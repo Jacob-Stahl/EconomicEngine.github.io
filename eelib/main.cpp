@@ -50,7 +50,7 @@ public:
             0.1,  // MARKET
             1.0, // LIMIT
             0.0,  // STOP
-            0.0,  // STOPLIMIT
+            0.1,  // STOPLIMIT
         })
     {
         std::random_device rd;
@@ -93,7 +93,7 @@ void benchmarkMatcher(){
     Matcher matcher;
     OrderFactory factory{"TEST"};
 
-    const int numOrders = 10'100'000;
+    const int numOrders = 10'000'000;
     std::vector<Order> orders;
     orders.reserve(numOrders);
 

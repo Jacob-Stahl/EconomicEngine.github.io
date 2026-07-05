@@ -38,8 +38,8 @@ class LimitsBin{
         std::uint32_t totalQty();
         void make(Order& makeEntry);
         void take(Order& takeEntry, std::unordered_map<std::int64_t, Order>& orderRegistry);
-        void cancelLimit(std::int64_t ordId);
-        void cancelStop(std::int64_t ordId); // TODO: add test coverage for stop cancellation
+        bool cancelLimit(std::int64_t ordId);
+        bool cancelStop(std::int64_t ordId); // TODO: add test coverage for stop cancellation
 
         bool hasDormantStops() const;
         void addDormantStop(const StopEntry& dormantStop);

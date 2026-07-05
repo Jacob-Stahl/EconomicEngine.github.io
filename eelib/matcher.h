@@ -41,6 +41,8 @@ class Matcher{
         size_t priceToBinIdx(std::int32_t price) const;
         std::int32_t binIdxToPrice(size_t binIdx) const;
         LimitsBin& getLimitsBin(std::int32_t price, std::vector<LimitsBin>& bins);
+        void refreshHighestBid(size_t startIdx);
+        void refreshLowestAsk(size_t startIdx);
         void placeLimit(Order& entry, Side side, std::int32_t price);
         void placeMarket(Order& entry, Side side);
         void placeStop(const Order& order);
